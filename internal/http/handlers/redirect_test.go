@@ -48,7 +48,7 @@ func TestNewRedirectHandler(t *testing.T) {
 			NewRedirectHandler(tt.sorage).ServeHTTP(rr, req)
 
 			result := rr.Result()
-
+			defer result.Body.Close()
 			assert.Equal(t, tt.expectedStatus, result.StatusCode)
 			assert.Equal(t, tt.expectedLocation, result.Header.Get("Location"))
 		})

@@ -37,7 +37,7 @@ func TestNewSaveHandler(t *testing.T) {
 			NewSaveHandler(tt.sorage).ServeHTTP(rr, req)
 
 			result := rr.Result()
-
+			defer result.Body.Close()
 			assert.Equal(t, tt.expectedStatus, result.StatusCode)
 		})
 	}
