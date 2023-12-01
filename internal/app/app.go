@@ -9,7 +9,7 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/storages/keeper"
 )
 
-func NewServer(host string) *server.HttpServer {
+func NewServer(host string) *server.HTTPServer {
 
 	mux := http.NewServeMux()
 
@@ -21,7 +21,7 @@ func NewServer(host string) *server.HttpServer {
 		Handler: mux,
 	}
 
-	return &server.HttpServer{
+	return &server.HTTPServer{
 		Server:          srv,
 		ShutdownTimeout: 10 * time.Second,
 	}

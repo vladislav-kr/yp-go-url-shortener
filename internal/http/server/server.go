@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-type HttpServer struct {
+type HTTPServer struct {
 	Server          *http.Server
 	ShutdownTimeout time.Duration
 }
 
-func (hs *HttpServer) Run() error {
+func (hs *HTTPServer) Run() error {
 	if err := hs.Server.ListenAndServe(); err != nil &&
 		!errors.Is(err, http.ErrServerClosed) {
 		return err
@@ -20,7 +20,7 @@ func (hs *HttpServer) Run() error {
 	return nil
 }
 
-func (hs *HttpServer) Stop() error {
+func (hs *HTTPServer) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), hs.ShutdownTimeout)
 	defer cancel()
 

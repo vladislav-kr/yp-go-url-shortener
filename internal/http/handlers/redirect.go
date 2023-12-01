@@ -10,7 +10,7 @@ import (
 func NewRedirectHandler(sorage keeper.Keeperer) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
+		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}

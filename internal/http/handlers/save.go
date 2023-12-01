@@ -29,9 +29,8 @@ func NewSaveHandler(sorage keeper.Keeperer) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-
-		w.Write([]byte(fmt.Sprintf("http://localhost:8080/%s", id)))
 		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(fmt.Sprintf("http://localhost:8080/%s", id)))
 		
 	}
 }
