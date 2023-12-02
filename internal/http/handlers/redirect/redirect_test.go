@@ -1,10 +1,13 @@
-package handlers
+package redirect
 
 import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,16 +44,31 @@ func TestNewRedirectHandler(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			rr := httptest.NewRecorder()
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/%s", tt.id), nil)
+			r := chi.NewRouter()
+
+			r.Use(middleware.URLFormat)
+
+			r.Get("/{id}", NewRedirectHandler(tt.sorage))
+
+			ts := httptest.NewServer(r)
+			defer ts.Close()
+
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s", ts.URL, tt.id), nil)
 			require.NoError(t, err)
 
-			NewRedirectHandler(tt.sorage).ServeHTTP(rr, req)
+			client := &http.Client{
+				CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
+			}
 
-			result := rr.Result()
-			defer result.Body.Close()
-			assert.Equal(t, tt.expectedStatus, result.StatusCode)
-			assert.Equal(t, tt.expectedLocation, result.Header.Get("Location"))
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+
+			defer resp.Body.Close()
+
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+			assert.Equal(t, tt.expectedLocation, resp.Header.Get("Location"))
 		})
 	}
 }
