@@ -7,14 +7,16 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/storages/keeper"
 )
 
-func NewRedirectHandler(sorage keeper.Keeperer) http.HandlerFunc {
+func NewRedirectHandler(
+	sorage keeper.Keeperer,
+) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		id := chi.URLParam(r, "id")
 		if len(id) == 0 {
 			w.WriteHeader(http.StatusBadRequest)
-			return 
+			return
 		}
 
 		url, err := sorage.GetURL(id)
