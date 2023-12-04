@@ -10,22 +10,18 @@ const (
 )
 
 func parseFlags(host, redirectHost *string) {
+	var fHost, fRedirectHost string
 
-	if len(*host) == 0 {
-		flag.StringVar(host, "a", defHost, "address and port to run server")
-	}
-
-	if len(*redirectHost) == 0 {
-		flag.StringVar(redirectHost, "b", defRedirectHost, "redirect address")
-	}
+	flag.StringVar(&fHost, "a", defHost, "address and port to run server")
+	flag.StringVar(&fRedirectHost, "b", defRedirectHost, "redirect address")
 
 	flag.Parse()
 
 	if len(*host) == 0 {
-		*host = defHost
+		*host = fHost
 	}
 
 	if len(*redirectHost) == 0 {
-		*redirectHost = defRedirectHost
+		*redirectHost = fRedirectHost
 	}
 }

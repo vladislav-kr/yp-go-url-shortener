@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/app"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/config"
@@ -13,7 +14,6 @@ import (
 )
 
 func main() {
-
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatal(fmt.Errorf("fail load config: %w", err))
@@ -24,7 +24,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sigCtx, sigCancel := signal.NotifyContext(ctx, os.Interrupt)
+	sigCtx, sigCancel := signal.NotifyContext(ctx,
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+	)
 	defer sigCancel()
 
 	errGr, errGrCtx := errgroup.WithContext(sigCtx)
