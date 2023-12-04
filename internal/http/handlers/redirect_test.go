@@ -1,4 +1,4 @@
-package redirect
+package handlers
 
 import (
 	"fmt"
@@ -8,35 +8,35 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/vladislav-kr/yp-go-url-shortener/internal/storages/keeper"
+	mapkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/map-keeper"
 )
 
-func TestNewRedirectHandler(t *testing.T) {
+func TestRedirectHandler(t *testing.T) {
+	stor := mapkeeper.New()
 
-	stor := keeper.New()
 	id, err := stor.PostURL("https://ya.ru/")
 	require.NoError(t, err)
+	h := NewHandlers(stor, "http://localhost:8080")
 
 	tests := []struct {
 		name             string
-		sorage           keeper.Keeperer
+		handler        func(w http.ResponseWriter, r *http.Request)
 		id               string
 		expectedStatus   int
 		expectedLocation string
 	}{
 		{
 			name:             "positive test",
-			sorage:           stor,
+			handler:           h.RedirectHandler,
 			id:               id,
 			expectedStatus:   http.StatusTemporaryRedirect,
 			expectedLocation: "https://ya.ru/",
 		},
 		{
 			name:           "negative test",
-			sorage:         stor,
+			handler:         h.RedirectHandler,
 			id:             "no-id",
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -48,7 +48,7 @@ func TestNewRedirectHandler(t *testing.T) {
 
 			r.Use(middleware.URLFormat)
 
-			r.Get("/{id}", NewRedirectHandler(tt.sorage))
+			r.Get("/{id}", tt.handler)
 
 			ts := httptest.NewServer(r)
 			defer ts.Close()

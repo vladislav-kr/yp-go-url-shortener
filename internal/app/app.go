@@ -4,25 +4,41 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/router"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/server"
+	mapkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/map-keeper"
 )
 
 type Option struct {
-	Host string
-	RedirectHost string
+	Host            string
+	RedirectHost    string
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
+	ShutdownTimeout time.Duration
 }
 
 func NewServer(opt Option) *server.HTTPServer {
-	mux, _ := router.NewRouter(opt.RedirectHost)
+
+	// обработчики с доступом к хранилищу
+	h := handlers.NewHandlers(
+		mapkeeper.New(),
+		opt.RedirectHost,
+	)
+
+	mux, _ := router.NewRouter(h)
 
 	srv := &http.Server{
-		Addr:    opt.Host,
-		Handler: mux,
+		Addr:         opt.Host,
+		Handler:      mux,
+		ReadTimeout:  opt.ReadTimeout,
+		WriteTimeout: opt.WriteTimeout,
+		IdleTimeout:  opt.IdleTimeout,
 	}
 
 	return &server.HTTPServer{
 		Server:          srv,
-		ShutdownTimeout: 10 * time.Second,
+		ShutdownTimeout: opt.ShutdownTimeout,
 	}
 }

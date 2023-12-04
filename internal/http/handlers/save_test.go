@@ -1,4 +1,4 @@
-package save
+package handlers
 
 import (
 	"net/http"
@@ -8,29 +8,28 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/vladislav-kr/yp-go-url-shortener/internal/storages/keeper"
+	mapkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/map-keeper"
 )
 
-func TestNewSaveHandler(t *testing.T) {
-	const redirectHost = "http://localhost:8080"
+func TestSaveHandler(t *testing.T) {
 
-	stor := keeper.New()
+	h := NewHandlers(mapkeeper.New(), "http://localhost:8080")
 
 	tests := []struct {
 		name           string
-		sorage         keeper.Keeperer
+		handler        func(w http.ResponseWriter, r *http.Request)
 		url            string
 		expectedStatus int
 	}{
 		{
 			name:           "url ok",
-			sorage:         stor,
+			handler:        h.SaveHandler,
 			url:            "https://ya.ru/",
 			expectedStatus: http.StatusCreated,
 		},
 		{
 			name:           "url empty",
-			sorage:         stor,
+			handler:        h.SaveHandler,
 			url:            "",
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -42,7 +41,7 @@ func TestNewSaveHandler(t *testing.T) {
 			req, err := http.NewRequest(http.MethodPost, "/", strings.NewReader(tt.url))
 			require.NoError(t, err)
 
-			NewSaveHandler(tt.sorage, redirectHost).ServeHTTP(rr, req)
+			tt.handler(rr, req)
 
 			result := rr.Result()
 			defer result.Body.Close()

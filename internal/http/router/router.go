@@ -5,14 +5,18 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers/redirect"
-	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers/save"
-	"github.com/vladislav-kr/yp-go-url-shortener/internal/storages/keeper"
 )
 
+type Handlerer interface {
+	SaveHandler(w http.ResponseWriter, r *http.Request)
+	RedirectHandler(w http.ResponseWriter, r *http.Request)
+}
+
 // Конфигурирует главный роутер
-func NewRouter(redirectHost string) (*chi.Mux, error) {
-	stor := keeper.New()
+func NewRouter(
+	handlers Handlerer,
+) (*chi.Mux, error) {
+
 	router := chi.NewRouter()
 
 	router.Use(
@@ -27,8 +31,8 @@ func NewRouter(redirectHost string) (*chi.Mux, error) {
 	})
 
 	router.Route("/", func(r chi.Router) {
-		r.Post("/", save.NewSaveHandler(stor, redirectHost))
-		r.Get("/{id}", redirect.NewRedirectHandler(stor))
+		r.Post("/", handlers.SaveHandler)
+		r.Get("/{id}", handlers.RedirectHandler)
 	})
 
 	return router, nil
