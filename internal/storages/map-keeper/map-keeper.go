@@ -19,9 +19,6 @@ func New() *Keeper {
 }
 
 func (k *Keeper) PostURL(url string) (string, error) {
-	if len(url) == 0 {
-		return "", fmt.Errorf("empty url")
-	}
 
 	id, err := cryptoutils.GenerateRandomString(10)
 	if err != nil {

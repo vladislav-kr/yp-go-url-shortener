@@ -15,7 +15,7 @@ type Handlerer interface {
 // Конфигурирует главный роутер
 func NewRouter(
 	handlers Handlerer,
-) (*chi.Mux, error) {
+) *chi.Mux {
 
 	router := chi.NewRouter()
 
@@ -35,5 +35,5 @@ func NewRouter(
 		r.Get("/{id}", handlers.RedirectHandler)
 	})
 
-	return router, nil
+	return router
 }

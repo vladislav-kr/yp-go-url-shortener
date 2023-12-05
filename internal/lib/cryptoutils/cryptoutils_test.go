@@ -40,6 +40,7 @@ func TestGenerateRandomString(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			id, err := GenerateRandomString(tt.size)
 
 			if tt.isError {
@@ -50,8 +51,4 @@ func TestGenerateRandomString(t *testing.T) {
 
 		})
 	}
-
-	t.Run("the router is created successfully", func(t *testing.T) {
-		
-	})
 }

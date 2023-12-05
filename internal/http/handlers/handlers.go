@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -39,7 +40,16 @@ func (h *Handlers) SaveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.storage.PostURL(string(data))
+	postURL := string(data)
+
+	// Валидация url
+	_, err = url.ParseRequestURI(string(data))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	id, err := h.storage.PostURL(postURL)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return

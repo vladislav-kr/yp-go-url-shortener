@@ -22,21 +22,21 @@ func TestRedirectHandler(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		handler        func(w http.ResponseWriter, r *http.Request)
+		handler          func(w http.ResponseWriter, r *http.Request)
 		id               string
 		expectedStatus   int
 		expectedLocation string
 	}{
 		{
 			name:             "positive test",
-			handler:           h.RedirectHandler,
+			handler:          h.RedirectHandler,
 			id:               id,
 			expectedStatus:   http.StatusTemporaryRedirect,
 			expectedLocation: "https://ya.ru/",
 		},
 		{
 			name:           "negative test",
-			handler:         h.RedirectHandler,
+			handler:        h.RedirectHandler,
 			id:             "no-id",
 			expectedStatus: http.StatusBadRequest,
 		},

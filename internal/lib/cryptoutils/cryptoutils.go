@@ -7,7 +7,7 @@ import (
 )
 
 func GenerateRandomString(size int) (string, error) {
-	const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_."
+	const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 	if size < 1 {
 		return "", fmt.Errorf("parameter size < 1")

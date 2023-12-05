@@ -33,6 +33,12 @@ func TestSaveHandler(t *testing.T) {
 			url:            "",
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name:           "invalid url",
+			handler:        h.SaveHandler,
+			url:            "ya.ru",
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
