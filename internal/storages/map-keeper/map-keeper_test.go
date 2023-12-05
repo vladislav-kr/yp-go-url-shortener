@@ -9,20 +9,50 @@ import (
 
 func TestKeeper(t *testing.T) {
 
-	t.Run("saving and receiving", func(t *testing.T) {
+	stor := New()
 
-		const testURL = "https://ya.ru/"
+	tests := []struct {
+		name        string
+		url         string
+		expectedURL string
+		isError     bool
+	}{
+		{
+			name:        "ulr найден",
+			url:         "https://ya.ru/",
+			expectedURL: "https://ya.ru/",
+		},
+		{
+			name:    "url не найден",
+			isError: true,
+		},
+	}
 
-		s := New()
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var (
+				id  string
+				err error
+			)
 
-		id, err := s.PostURL(testURL)
-		require.NoError(t, err)
-		assert.NotEmpty(t, id)
+			if !tt.isError {
+				id, err = stor.PostURL(tt.url)
+				require.NoError(t, err)
+				assert.NotEmpty(t, id)
+			}
 
-		url, err := s.GetURL(id)
-		require.NoError(t, err)
-		assert.Equal(t, testURL, url)
+			url, err := stor.GetURL(id)
 
-	})
+			if tt.isError {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.url, url)
+
+		})
+	}
 
 }
