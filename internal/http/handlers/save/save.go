@@ -1,4 +1,4 @@
-package handlers
+package save
 
 import (
 	"fmt"
@@ -11,11 +11,6 @@ import (
 func NewSaveHandler(sorage keeper.Keeperer) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
 		defer r.Body.Close()
 		data, err := io.ReadAll(r.Body)
 		

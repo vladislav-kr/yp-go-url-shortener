@@ -1,21 +1,22 @@
-package handlers
+package redirect
 
 import (
 	"net/http"
-	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/storages/keeper"
 )
 
 func NewRedirectHandler(sorage keeper.Keeperer) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+
+		id := chi.URLParam(r, "id")
+		if len(id) == 0 {
 			w.WriteHeader(http.StatusBadRequest)
-			return
+			return 
 		}
 
-		id := strings.TrimPrefix(r.URL.Path, "/")
 		url, err := sorage.GetURL(id)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)

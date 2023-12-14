@@ -1,4 +1,4 @@
-package handlers
+package save
 
 import (
 	"net/http"
@@ -21,10 +21,16 @@ func TestNewSaveHandler(t *testing.T) {
 		expectedStatus int
 	}{
 		{
-			name:           "positive test",
+			name:           "url ok",
 			sorage:         stor,
 			url:            "https://ya.ru/",
 			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:           "url empty",
+			sorage:         stor,
+			url:            "",
+			expectedStatus: http.StatusBadRequest,
 		},
 	}
 	for _, tt := range tests {
