@@ -11,7 +11,7 @@ import (
 )
 
 // Конфигурирует главный роутер
-func NewRouter() (*chi.Mux, error) {
+func NewRouter(redirectHost string) (*chi.Mux, error) {
 	stor := keeper.New()
 	router := chi.NewRouter()
 
@@ -27,7 +27,7 @@ func NewRouter() (*chi.Mux, error) {
 	})
 
 	router.Route("/", func(r chi.Router) {
-		r.Post("/", save.NewSaveHandler(stor))
+		r.Post("/", save.NewSaveHandler(stor, redirectHost))
 		r.Get("/{id}", redirect.NewRedirectHandler(stor))
 	})
 

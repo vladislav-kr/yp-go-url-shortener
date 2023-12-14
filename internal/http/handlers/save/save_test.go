@@ -12,6 +12,8 @@ import (
 )
 
 func TestNewSaveHandler(t *testing.T) {
+	const redirectHost = "http://localhost:8080"
+
 	stor := keeper.New()
 
 	tests := []struct {
@@ -40,7 +42,7 @@ func TestNewSaveHandler(t *testing.T) {
 			req, err := http.NewRequest(http.MethodPost, "/", strings.NewReader(tt.url))
 			require.NoError(t, err)
 
-			NewSaveHandler(tt.sorage).ServeHTTP(rr, req)
+			NewSaveHandler(tt.sorage, redirectHost).ServeHTTP(rr, req)
 
 			result := rr.Result()
 			defer result.Body.Close()

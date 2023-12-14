@@ -5,14 +5,19 @@ import (
 	"time"
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/router"
-	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/server"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/server"
 )
 
-func NewServer(host string) *server.HTTPServer {
-	mux, _ := router.NewRouter()
+type Option struct {
+	Host string
+	RedirectHost string
+}
+
+func NewServer(opt Option) *server.HTTPServer {
+	mux, _ := router.NewRouter(opt.RedirectHost)
 
 	srv := &http.Server{
-		Addr:    host,
+		Addr:    opt.Host,
 		Handler: mux,
 	}
 
