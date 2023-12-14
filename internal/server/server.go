@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"time"
 )
 
 type HTTPServer struct {
-	Server          *http.Server
-	ShutdownTimeout time.Duration
+	Server *http.Server
 }
 
 func (hs *HTTPServer) Run() error {
@@ -20,9 +18,6 @@ func (hs *HTTPServer) Run() error {
 	return nil
 }
 
-func (hs *HTTPServer) Stop() error {
-	ctx, cancel := context.WithTimeout(context.Background(), hs.ShutdownTimeout)
-	defer cancel()
-
+func (hs *HTTPServer) Stop(ctx context.Context) error {
 	return hs.Server.Shutdown(ctx)
 }

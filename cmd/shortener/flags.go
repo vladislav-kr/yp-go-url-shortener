@@ -1,11 +1,27 @@
 package main
 
-import "flag"
+import (
+	"flag"
+)
+
+const (
+	defHost         = ":8080"
+	defRedirectHost = "http://localhost:8080"
+)
 
 func parseFlags(host, redirectHost *string) {
+	var fHost, fRedirectHost string
 
-	flag.StringVar(host, "a", ":8080", "address and port to run server")
-	flag.StringVar(redirectHost, "b", "http://localhost:8080", "redirect address")
-	
+	flag.StringVar(&fHost, "a", defHost, "address and port to run server")
+	flag.StringVar(&fRedirectHost, "b", defRedirectHost, "redirect address")
+
 	flag.Parse()
+
+	if len(*host) == 0 {
+		*host = fHost
+	}
+
+	if len(*redirectHost) == 0 {
+		*redirectHost = fRedirectHost
+	}
 }
