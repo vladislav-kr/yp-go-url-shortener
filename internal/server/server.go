@@ -4,20 +4,41 @@ import (
 	"context"
 	"errors"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 type HTTPServer struct {
-	Server *http.Server
+	log    *zap.Logger
+	server *http.Server
+}
+
+func NewHTTPServer(
+	log *zap.Logger,
+	srv *http.Server,
+) *HTTPServer {
+	return &HTTPServer{
+		log:    log,
+		server: srv,
+	}
 }
 
 func (hs *HTTPServer) Run() error {
-	if err := hs.Server.ListenAndServe(); err != nil &&
-		!errors.Is(err, http.ErrServerClosed) {
+	hs.log.Info("running")
+	err := hs.server.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		hs.log.Warn("stopped")
+		return nil
+	} else {
+		hs.log.Error(
+			"failed to stopped",
+			zap.Error(err),
+		)
 		return err
 	}
-	return nil
 }
 
 func (hs *HTTPServer) Stop(ctx context.Context) error {
-	return hs.Server.Shutdown(ctx)
+	hs.log.Info("stopping...")
+	return hs.server.Shutdown(ctx)
 }
