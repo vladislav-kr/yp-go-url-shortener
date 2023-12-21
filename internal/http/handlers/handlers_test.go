@@ -169,7 +169,7 @@ func TestSaveJSONHandler(t *testing.T) {
 		{
 			name: "url ok",
 			url: models.URLRequest{
-				Url: "https://ya.ru/",
+				URL: "https://ya.ru/",
 			},
 			alias:          "alias1",
 			expectedStatus: http.StatusCreated,
@@ -182,7 +182,7 @@ func TestSaveJSONHandler(t *testing.T) {
 		{
 			name: "invalid url",
 			url: models.URLRequest{
-				Url: "ya.ru/",
+				URL: "ya.ru/",
 			},
 			err:            errors.New("invalid url"),
 			expectedStatus: http.StatusBadRequest,
@@ -194,7 +194,7 @@ func TestSaveJSONHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			urlHndl := mocks.NewURLHandler(t)
-			urlHndl.On("SaveURL", tc.url.Url).
+			urlHndl.On("SaveURL", tc.url.URL).
 				Return(tc.alias, tc.err)
 
 			h := NewHandlers(

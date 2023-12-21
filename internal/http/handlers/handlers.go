@@ -94,7 +94,7 @@ func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.urlHandler.SaveURL(req.Url)
+	id, err := h.urlHandler.SaveURL(req.URL)
 	if err != nil {
 		h.log.Error(
 			"failed to save url",
