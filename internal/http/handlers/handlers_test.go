@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers/mocks"
 	"go.uber.org/zap/zaptest"
 )
@@ -153,4 +155,73 @@ func TestRedirectHandler(t *testing.T) {
 
 		})
 	}
+}
+
+func TestSaveJSONHandler(t *testing.T) {
+
+	cases := []struct {
+		name           string
+		url            models.URLRequest
+		alias          string
+		err            error
+		expectedStatus int
+	}{
+		{
+			name: "url ok",
+			url: models.URLRequest{
+				Url: "https://ya.ru/",
+			},
+			alias:          "alias1",
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:           "url empty",
+			err:            errors.New("url empty"),
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "invalid url",
+			url: models.URLRequest{
+				Url: "ya.ru/",
+			},
+			err:            errors.New("invalid url"),
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			urlHndl := mocks.NewURLHandler(t)
+			urlHndl.On("SaveURL", tc.url.Url).
+				Return(tc.alias, tc.err)
+
+			h := NewHandlers(
+				zaptest.NewLogger(t),
+				urlHndl,
+				"http://localhost:8080",
+			)
+
+			rr := httptest.NewRecorder()
+
+			body, err := json.Marshal(tc.url)
+			require.NoError(t, err)
+
+			req, err := http.NewRequest(
+				http.MethodPost,
+				"/",
+				strings.NewReader(string(body)),
+			)
+			require.NoError(t, err)
+
+			h.SaveJSONHandler(rr, req)
+
+			result := rr.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tc.expectedStatus, result.StatusCode)
+
+		})
+	}
+
 }
