@@ -21,6 +21,10 @@ func NewRouter(
 		chiMiddleware.Recoverer,
 		chiMiddleware.URLFormat,
 		m.Logger,
+		m.NewCompressHandler([]string{
+			"application/json",
+			"text/html",
+		}),
 	)
 
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
