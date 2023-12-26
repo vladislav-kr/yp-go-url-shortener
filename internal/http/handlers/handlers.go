@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"go.uber.org/zap"
 )
 
@@ -56,8 +58,8 @@ func (h *Handlers) SaveHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
 
+	render.Status(r, http.StatusCreated)
 	render.PlainText(w, r, fmt.Sprintf("%s/%s", h.redirectHost, id))
 }
 
@@ -76,4 +78,34 @@ func (h *Handlers) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	req := models.URLRequest{}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.log.Error(
+			"failed to read JSON request body",
+			zap.Error(err),
+		)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	id, err := h.urlHandler.SaveURL(req.URL)
+	if err != nil {
+		h.log.Error(
+			"failed to save url",
+			zap.Error(err),
+		)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.JSON(w, r, models.URLResponse{
+		Result: fmt.Sprintf("%s/%s", h.redirectHost, id),
+	})
 }
