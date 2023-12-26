@@ -33,7 +33,6 @@ func main() {
 	// Основной контекст api сервера
 	// Не отменяется при отмене errgroup
 	ctx, cancel := context.WithCancel(context.Background())
-	// ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	urlShortener, err := app.NewURLShortener(

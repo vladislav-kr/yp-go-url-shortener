@@ -48,10 +48,16 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 
 	dir, _ := filepath.Split(storageFilePath)
 
-	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
-		if err := os.Mkdir(dir, os.ModeDir); err != nil {
+	if _, err := os.Stat(dir); err != nil {
+		switch {
+		case errors.Is(err, os.ErrNotExist):
+			if err := os.Mkdir(dir, os.ModeDir); err != nil {
+				return nil, err
+			}
+		default:
 			return nil, err
 		}
+
 	}
 
 	memStorage := mapkeeper.New()

@@ -52,6 +52,7 @@ func (m *Middleware) NewCompressHandler(contentTypes []string) func(next http.Ha
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if compressPool == nil {
 				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 
 			// по умолчанию устанавливаем оригинальный http.ResponseWriter как тот,

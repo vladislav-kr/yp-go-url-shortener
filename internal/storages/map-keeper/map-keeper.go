@@ -52,10 +52,10 @@ func (k *Keeper) LoadFromFile(path string) error {
 	if err != nil {
 		return err
 	}
-
-	url := &models.FileURL{}
-
+	
+	var url *models.FileURL
 	for c.More() {
+		url = &models.FileURL{}
 		c.Decode(url)
 		k.storage[url.ShortURL] = url.OriginalURL
 	}

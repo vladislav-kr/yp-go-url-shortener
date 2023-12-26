@@ -43,7 +43,7 @@ func (cw *compressWriter) Write(p []byte) (int, error) {
 
 func (cw *compressWriter) WriteHeader(statusCode int) {
 
-	if statusCode < 300 &&
+	if statusCode < http.StatusMultipleChoices &&
 		cw.supportCompress(cw.w.Header().Get("Content-Type")) {
 		cw.w.Header().Set("Content-Encoding", "gzip")
 	}
