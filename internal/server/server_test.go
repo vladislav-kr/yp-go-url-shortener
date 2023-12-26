@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -21,9 +22,10 @@ func TestHTTPServer(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	srv := HTTPServer{
-		Server: ts.Config,
-	}
+	srv := NewHTTPServer(
+		zaptest.NewLogger(t),
+		ts.Config,
+	)
 
 	errgroup, errgroupContext := errgroup.WithContext(ctx)
 

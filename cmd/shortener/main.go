@@ -9,6 +9,7 @@ import (
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/app"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/config"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/logger"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -19,6 +20,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("fail load config: %v", err)
 	}
+
+	log := logger.MustLogger(cfg.App.LogLevel)
+	defer log.Sync()
+	log.Info("launching a url shortener...")
+	log.Debug("debug messages enabled")
 
 	// Дополним конфиг из флагов, если env переменные не заданы
 	parseFlags(&cfg.HTTP.Host, &cfg.URLShortener.RedirectHost)
@@ -36,10 +42,11 @@ func main() {
 	)
 	defer sigCancel()
 
-	// группа для запуска и остановки сервера по сигналу
+	// Группа для запуска и остановки сервера по сигналу
 	errGr, errGrCtx := errgroup.WithContext(sigCtx)
 
 	srv := app.NewServer(
+		log,
 		app.Option{
 			Host:         cfg.HTTP.Host,
 			RedirectHost: cfg.URLShortener.RedirectHost,
@@ -66,7 +73,7 @@ func main() {
 	})
 
 	if err := errGr.Wait(); err != nil {
-		log.Fatal(err)
+		log.Error(err.Error())
 	}
 
 }

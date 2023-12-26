@@ -1,0 +1,156 @@
+package handlers
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers/mocks"
+	"go.uber.org/zap/zaptest"
+)
+
+func TestSaveHandler(t *testing.T) {
+
+	cases := []struct {
+		name           string
+		url            string
+		alias          string
+		err            error
+		expectedStatus int
+	}{
+		{
+			name:           "url ok",
+			url:            "https://ya.ru/",
+			alias:          "alias1",
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:           "url empty",
+			url:            "",
+			err:            errors.New("url empty"),
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "invalid url",
+			url:            "ya.ru",
+			err:            errors.New("invalid url"),
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			urlHndl := mocks.NewURLHandler(t)
+			urlHndl.On("SaveURL", tc.url).
+				Return(tc.alias, tc.err)
+
+			h := NewHandlers(
+				zaptest.NewLogger(t),
+				urlHndl,
+				"http://localhost:8080",
+			)
+
+			rr := httptest.NewRecorder()
+			req, err := http.NewRequest(
+				http.MethodPost,
+				"/",
+				strings.NewReader(tc.url),
+			)
+			require.NoError(t, err)
+
+			h.SaveHandler(rr, req)
+
+			result := rr.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tc.expectedStatus, result.StatusCode)
+
+		})
+	}
+
+}
+
+func TestRedirectHandler(t *testing.T) {
+	cases := []struct {
+		name             string
+		alias            string
+		err              error
+		expectedStatus   int
+		expectedLocation string
+		isCallMock       bool
+	}{
+		{
+			name:             "successful redirect",
+			alias:            "alias1",
+			expectedStatus:   http.StatusTemporaryRedirect,
+			expectedLocation: "https://ya.ru/",
+			isCallMock:       true,
+		},
+		{
+			name:           "unsuccessful redirect",
+			alias:          "alias1",
+			err:            errors.New("url not found"),
+			expectedStatus: http.StatusBadRequest,
+			isCallMock:     true,
+		},
+		{
+			name:           "alias is empty: 404",
+			err:            errors.New("alias is empty"),
+			expectedStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			urlHndl := mocks.NewURLHandler(t)
+			if tc.isCallMock {
+				urlHndl.On("ReadURL", tc.alias).
+					Return(tc.expectedLocation, tc.err)
+			}
+
+			h := NewHandlers(
+				zaptest.NewLogger(t),
+				urlHndl,
+				"http://localhost:8080",
+			)
+
+			r := chi.NewRouter()
+
+			r.Use(middleware.URLFormat)
+
+			r.Get("/{id}", h.RedirectHandler)
+
+			ts := httptest.NewServer(r)
+			defer ts.Close()
+
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s", ts.URL, tc.alias), nil)
+			require.NoError(t, err)
+
+			client := &http.Client{
+				CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
+			}
+
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+
+			defer resp.Body.Close()
+
+			assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+			assert.Equal(t, tc.expectedLocation, resp.Header.Get("Location"))
+
+		})
+	}
+}

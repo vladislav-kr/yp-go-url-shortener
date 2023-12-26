@@ -2,9 +2,16 @@ module github.com/vladislav-kr/yp-go-url-shortener
 
 go 1.21.4
 
-require golang.org/x/sync v0.5.0
+require (
+	go.uber.org/zap v1.26.0
+	golang.org/x/sync v0.5.0
+)
 
-require github.com/ajg/form v1.5.1 // indirect
+require (
+	github.com/ajg/form v1.5.1 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+)
 
 require (
 	github.com/caarlos0/env/v10 v10.0.0

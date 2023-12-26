@@ -8,6 +8,9 @@ import (
 )
 
 type Config struct {
+	App struct {
+		LogLevel string `env:"APP_LOG_LEVEL" envDefault:"info"`
+	}
 	HTTP struct {
 		Host            string        `env:"SERVER_ADDRESS"`
 		ShutdownTimeout time.Duration `env:"HTTP_SHUTDOWN_TIMEOUT" envDefault:"10s"`
