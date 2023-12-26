@@ -1,6 +1,6 @@
 package models
 
 type FileURL struct {
-	ShortUrl    string `json:"shortUrl"`
-	OriginalUrl string `json:"originalUrl"`
+	ShortURL    string `json:"shortUrl"`
+	OriginalURL string `json:"originalUrl"`
 }

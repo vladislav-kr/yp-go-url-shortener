@@ -29,8 +29,8 @@ func TestReadWriteFile(t *testing.T) {
 	p, err := NewProducer(name)
 	require.NoError(t, err)
 	saveData := models.FileURL{
-		ShortUrl:    "jsjkfkjdf",
-		OriginalUrl: "https://ya.ru/",
+		ShortURL:    "jsjkfkjdf",
+		OriginalURL: "https://ya.ru/",
 	}
 
 	err = p.Write(&saveData)

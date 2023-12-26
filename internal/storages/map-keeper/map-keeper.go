@@ -57,7 +57,7 @@ func (k *Keeper) LoadFromFile(path string) error {
 
 	for c.More() {
 		c.Decode(url)
-		k.storage[url.ShortUrl] = url.OriginalUrl
+		k.storage[url.ShortURL] = url.OriginalURL
 	}
 
 	return c.Close()
@@ -78,8 +78,8 @@ func (k *Keeper) SaveToFile(path string) error {
 
 	url := &models.FileURL{}
 	for shortURL, originURL := range k.storage {
-		url.ShortUrl = shortURL
-		url.OriginalUrl = originURL
+		url.ShortURL = shortURL
+		url.OriginalURL = originURL
 		p.Write(url)
 	}
 
