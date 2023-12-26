@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/lib/cryptoutils"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/storages/map-keeper/file"
 )
 
 type Keeper struct {
-	m       sync.RWMutex
+	mutex   sync.RWMutex
 	storage map[string]string
 }
 
@@ -25,19 +27,61 @@ func (k *Keeper) PostURL(url string) (string, error) {
 		return "", err
 	}
 
-	k.m.Lock()
+	k.mutex.Lock()
 	k.storage[id] = url
-	k.m.Unlock()
+	k.mutex.Unlock()
 	return id, nil
 }
 
 func (k *Keeper) GetURL(id string) (string, error) {
-	k.m.RLock()
+	k.mutex.RLock()
 	val, ok := k.storage[id]
-	k.m.RUnlock()
+	k.mutex.RUnlock()
 	if !ok {
 		return "", fmt.Errorf("not found")
 	}
 
 	return val, nil
+}
+
+func (k *Keeper) LoadFromFile(path string) error {
+	k.mutex.Lock()
+	defer k.mutex.Unlock()
+
+	c, err := file.NewConsumer(path)
+	if err != nil {
+		return err
+	}
+
+	url := &models.FileURL{}
+
+	for c.More() {
+		c.Decode(url)
+		k.storage[url.ShortUrl] = url.OriginalUrl
+	}
+
+	return c.Close()
+}
+
+func (k *Keeper) SaveToFile(path string) error {
+	k.mutex.Lock()
+	defer k.mutex.Unlock()
+
+	if len(k.storage) < 1 {
+		return nil
+	}
+
+	p, err := file.NewProducer(path)
+	if err != nil {
+		return err
+	}
+
+	url := &models.FileURL{}
+	for shortURL, originURL := range k.storage {
+		url.ShortUrl = shortURL
+		url.OriginalUrl = originURL
+		p.Write(url)
+	}
+
+	return p.Close()
 }

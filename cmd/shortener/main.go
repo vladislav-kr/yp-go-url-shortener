@@ -3,14 +3,11 @@ package main
 import (
 	"context"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/app"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/config"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/logger"
-	"golang.org/x/sync/errgroup"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -27,52 +24,36 @@ func main() {
 	log.Debug("debug messages enabled")
 
 	// Дополним конфиг из флагов, если env переменные не заданы
-	parseFlags(&cfg.HTTP.Host, &cfg.URLShortener.RedirectHost)
+	parseFlags(
+		&cfg.HTTP.Host,
+		&cfg.URLShortener.RedirectHost,
+		&cfg.Storage.File.PATH,
+	)
 
 	// Основной контекст api сервера
 	// Не отменяется при отмене errgroup
 	ctx, cancel := context.WithCancel(context.Background())
+	// ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Контекст прослушивающий сигналы прерывания OS
-	sigCtx, sigCancel := signal.NotifyContext(ctx,
-		os.Interrupt,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-	)
-	defer sigCancel()
-
-	// Группа для запуска и остановки сервера по сигналу
-	errGr, errGrCtx := errgroup.WithContext(sigCtx)
-
-	srv := app.NewServer(
+	urlShortener, err := app.NewURLShortener(
 		log,
 		app.Option{
-			Host:         cfg.HTTP.Host,
-			RedirectHost: cfg.URLShortener.RedirectHost,
-			ReadTimeout:  cfg.HTTP.ReadTimeout,
-			WriteTimeout: cfg.HTTP.WriteTimeout,
-			IdleTimeout:  cfg.HTTP.IdleTimeout,
+			Host:            cfg.HTTP.Host,
+			RedirectHost:    cfg.URLShortener.RedirectHost,
+			ReadTimeout:     cfg.HTTP.ReadTimeout,
+			WriteTimeout:    cfg.HTTP.WriteTimeout,
+			IdleTimeout:     cfg.HTTP.IdleTimeout,
+			ShutdownTimeout: cfg.HTTP.ShutdownTimeout,
+			StorageFilePath: cfg.Storage.File.PATH,
 		},
 	)
+	if err != nil {
+		log.Error("failed to configure server", zap.Error(err))
+		return
+	}
 
-	errGr.Go(func() error {
-		return srv.Run()
-	})
-
-	errGr.Go(func() error {
-		<-errGrCtx.Done()
-
-		ctx, cancel := context.WithTimeout(
-			context.Background(),
-			cfg.HTTP.ShutdownTimeout,
-		)
-		defer cancel()
-
-		return srv.Stop(ctx)
-	})
-
-	if err := errGr.Wait(); err != nil {
+	if err := urlShortener.Run(ctx); err != nil {
 		log.Error(err.Error())
 	}
 

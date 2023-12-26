@@ -21,6 +21,11 @@ type Config struct {
 	URLShortener struct {
 		RedirectHost string `env:"BASE_URL"`
 	}
+	Storage struct {
+		File struct {
+			PATH string `env:"FILE_STORAGE_PATH"`
+		}
+	}
 }
 
 // Загружает конфиг приложения

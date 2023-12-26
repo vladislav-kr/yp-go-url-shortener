@@ -7,13 +7,15 @@ import (
 const (
 	defHost         = ":8080"
 	defRedirectHost = "http://localhost:8080"
+	defFilePath     = "\\tmp\\short-url-db.json"
 )
 
-func parseFlags(host, redirectHost *string) {
-	var fHost, fRedirectHost string
+func parseFlags(host, redirectHost, filePath *string) {
+	var fHost, fRedirectHost, fFilePath string
 
 	flag.StringVar(&fHost, "a", defHost, "address and port to run server")
 	flag.StringVar(&fRedirectHost, "b", defRedirectHost, "redirect address")
+	flag.StringVar(&fFilePath, "f", defFilePath, "redirect address")
 
 	flag.Parse()
 
@@ -23,5 +25,9 @@ func parseFlags(host, redirectHost *string) {
 
 	if len(*redirectHost) == 0 {
 		*redirectHost = fRedirectHost
+	}
+
+	if len(*filePath) == 0 {
+		*filePath = fFilePath
 	}
 }

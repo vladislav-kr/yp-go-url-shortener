@@ -1,6 +1,8 @@
 package mapkeeper
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,5 +56,37 @@ func TestKeeper(t *testing.T) {
 
 		})
 	}
+
+}
+
+func TestKeeperSaveReadFile(t *testing.T) {
+
+	absDir, err := filepath.Abs("")
+	require.NoError(t, err)
+	dir, err := os.MkdirTemp(absDir, "testfile*")
+
+	t.Cleanup(func() {
+		t.Helper()
+		err = os.RemoveAll(dir)
+		require.NoError(t, err)
+	})
+
+	storage := New()
+	saveData := map[string]string{
+		"fdfsfwewq2":  "https://ya.ru/",
+		"fdfdd455654": "https://practicum.yandex.ru/",
+	}
+	path := dir + "/testfileKeeper.json"
+	storage.storage = saveData
+
+	err = storage.SaveToFile(path)
+	require.NoError(t, err)
+
+	storage.storage = map[string]string{}
+
+	err = storage.LoadFromFile(path)
+	require.NoError(t, err)
+
+	assert.EqualValues(t, storage.storage, saveData)
 
 }
