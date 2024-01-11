@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -16,6 +18,7 @@ import (
 type URLHandler interface {
 	ReadURL(alias string) (string, error)
 	SaveURL(url string) (string, error)
+	Ping(ctx context.Context) error
 }
 
 type Handlers struct {
@@ -108,4 +111,17 @@ func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, models.URLResponse{
 		Result: fmt.Sprintf("%s/%s", h.redirectHost, id),
 	})
+}
+
+func (h *Handlers) PingHandler(w http.ResponseWriter, r *http.Request) {
+	
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+	defer cancel()
+	if err := h.urlHandler.Ping(ctx); err != nil {
+		h.log.Error("no access to database", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

@@ -1,10 +1,13 @@
 package urlhandler
 
 import (
+	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler/mocks"
 )
 
@@ -37,6 +40,7 @@ func TestReadURL(t *testing.T) {
 			isError:     true,
 		},
 	}
+	db := mocks.NewDBKeeperer(t)
 
 	for _, tc := range cases {
 		tc := tc
@@ -51,7 +55,7 @@ func TestReadURL(t *testing.T) {
 					Return(tc.expectedURL, tc.expectedErr)
 			}
 
-			h := NewURLHandler(storage)
+			h := NewURLHandler(storage, db)
 
 			url, err := h.ReadURL(tc.id)
 
@@ -101,6 +105,8 @@ func TestSaveURL(t *testing.T) {
 		},
 	}
 
+	db := mocks.NewDBKeeperer(t)
+
 	for _, tc := range cases {
 		tc := tc
 
@@ -114,7 +120,7 @@ func TestSaveURL(t *testing.T) {
 					Return(tc.expectedAlias, tc.expectedErr)
 			}
 
-			h := NewURLHandler(storage)
+			h := NewURLHandler(storage, db)
 
 			alias, err := h.SaveURL(tc.longURL)
 
@@ -126,6 +132,56 @@ func TestSaveURL(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedAlias, alias)
+
+		})
+
+	}
+
+}
+
+func TestPing(t *testing.T) {
+
+	cases := []struct {
+		name    string
+		isError bool
+	}{
+		{
+			name: "successful database ping",
+		},
+		{
+			name:    "unsuccessful database ping",
+			isError: true,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			db := mocks.NewDBKeeperer(t)
+			storage := mocks.NewKeeperer(t)
+
+			var err error
+			if tc.isError {
+				err = errors.New("fail ping db")
+			}
+			db.
+				On("Ping", mock.AnythingOfType("*context.timerCtx")).
+				Return(err)
+
+			h := NewURLHandler(storage, db)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			errPing := h.Ping(ctx)
+
+			if tc.isError {
+				assert.Error(t, errPing)
+				return
+			}
+
+			assert.NoError(t, errPing)
 
 		})
 

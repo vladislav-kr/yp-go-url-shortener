@@ -30,12 +30,11 @@ func NewRouter(
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	})
+	router.Get("/ping", h.PingHandler)
 
-	router.Route("/", func(r chi.Router) {
-		r.Post("/", h.SaveHandler)
-		r.Get("/{id}", h.RedirectHandler)
-		r.Post("/api/shorten", h.SaveJSONHandler)
-	})
+	router.Post("/", h.SaveHandler)
+	router.Get("/{id}", h.RedirectHandler)
+	router.Post("/api/shorten", h.SaveJSONHandler)
 
 	return router
 }

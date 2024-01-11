@@ -28,6 +28,7 @@ func main() {
 		&cfg.HTTP.Host,
 		&cfg.URLShortener.RedirectHost,
 		&cfg.Storage.File.PATH,
+		&cfg.Storage.Postgres.DNS,
 	)
 
 	// Основной контекст api сервера
@@ -45,6 +46,7 @@ func main() {
 			IdleTimeout:     cfg.HTTP.IdleTimeout,
 			ShutdownTimeout: cfg.HTTP.ShutdownTimeout,
 			StorageFilePath: cfg.Storage.File.PATH,
+			StorageDBDNS:    cfg.Storage.Postgres.DNS,
 		},
 	)
 	if err != nil {

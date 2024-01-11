@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers/mocks"
@@ -216,6 +217,64 @@ func TestSaveJSONHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			h.SaveJSONHandler(rr, req)
+
+			result := rr.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tc.expectedStatus, result.StatusCode)
+
+		})
+	}
+
+}
+
+func TestPingHandler(t *testing.T) {
+
+	cases := []struct {
+		name           string
+		expectedStatus int
+		isError        bool
+	}{
+		{
+			name:           "successful database ping",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "unsuccessful database ping",
+			expectedStatus: http.StatusInternalServerError,
+			isError:        true,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			urlHndl := mocks.NewURLHandler(t)
+
+			var err error
+			if tc.isError {
+				err = errors.New("fail ping db")
+			}
+
+			urlHndl.On("Ping", mock.AnythingOfType("*context.timerCtx")).
+				Return(err)
+
+			h := NewHandlers(
+				zaptest.NewLogger(t),
+				urlHndl,
+				"http://localhost:8080",
+			)
+
+			rr := httptest.NewRecorder()
+
+			req, err := http.NewRequest(
+				http.MethodGet,
+				"/",
+				nil,
+			)
+			require.NoError(t, err)
+
+			h.PingHandler(rr, req)
 
 			result := rr.Result()
 			defer result.Body.Close()

@@ -25,6 +25,9 @@ type Config struct {
 		File struct {
 			PATH string `env:"FILE_STORAGE_PATH"`
 		}
+		Postgres struct {
+			DNS string `env:"DATABASE_DSN"`
+		}
 	}
 }
 
