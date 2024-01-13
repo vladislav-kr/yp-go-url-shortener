@@ -1,6 +1,7 @@
 package mapkeeper
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +12,7 @@ import (
 
 func TestKeeper(t *testing.T) {
 
-	stor := New()
+	stor := New("")
 
 	tests := []struct {
 		name        string
@@ -40,12 +41,12 @@ func TestKeeper(t *testing.T) {
 			)
 
 			if !tt.isError {
-				id, err = stor.PostURL(tt.url)
+				id, err = stor.PostURL(context.Background(), tt.url)
 				require.NoError(t, err)
 				assert.NotEmpty(t, id)
 			}
 
-			url, err := stor.GetURL(id)
+			url, err := stor.GetURL(context.Background(), id)
 
 			if tt.isError {
 				assert.Error(t, err)
@@ -71,20 +72,21 @@ func TestKeeperSaveReadFile(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	storage := New()
+	
 	saveData := map[string]string{
 		"fdfsfwewq2":  "https://ya.ru/",
 		"fdfdd455654": "https://practicum.yandex.ru/",
 	}
 	path := dir + "/testfileKeeper.json"
+	storage := New(path)
 	storage.storage = saveData
 
-	err = storage.SaveToFile(path)
+	err = storage.SaveToFile()
 	require.NoError(t, err)
 
 	storage.storage = map[string]string{}
 
-	err = storage.LoadFromFile(path)
+	err = storage.LoadFromFile()
 	require.NoError(t, err)
 
 	assert.EqualValues(t, storage.storage, saveData)

@@ -30,10 +30,9 @@ import (
 type URLShortener struct {
 	log             *zap.Logger
 	server          *server.HTTPServer
-	storage         *mapkeeper.Keeper
-	storageFilePath string
 	shutdownTimeout time.Duration
 	db              *sql.DB
+	memStorage      *mapkeeper.Keeper
 }
 
 type Option struct {
@@ -48,32 +47,30 @@ type Option struct {
 }
 
 func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
+	var (
+		db         *sql.DB
+		memStorage *mapkeeper.Keeper
+		storage    urlHandler.Keeperer
+	)
 
-	dbStorage, err := connectionDB(opt.StorageDBDNS)
-	if err != nil {
-		return nil, err
-	}
-
-	storageFilePath, err := fileutils.CreateFullPathFromRelative(opt.StorageFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	dir, _ := filepath.Split(storageFilePath)
-
-	if _, err := os.Stat(dir); err != nil {
-		switch {
-		case errors.Is(err, os.ErrNotExist):
-			if err := os.Mkdir(dir, os.ModeDir); err != nil {
-				return nil, err
-			}
-		default:
+	switch {
+	case len(opt.StorageDBDNS) > 0:
+		var err error
+		db, err = connectionDB(opt.StorageDBDNS)
+		if err != nil {
 			return nil, err
 		}
-
+		storage = dbkeeper.NewDBKeeper(db)
+	case len(opt.StorageFilePath) > 0:
+		storageFilePath, err := validateStorageFilePath(opt.StorageFilePath)
+		if err != nil {
+			return nil, err
+		}
+		memStorage = mapkeeper.New(storageFilePath)
+		storage = memStorage
+	default:
+		return nil, fmt.Errorf("failed to create storage")
 	}
-
-	memStorage := mapkeeper.New()
 
 	h := handlers.NewHandlers(
 		log.With(
@@ -82,10 +79,7 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 				"handlers",
 			),
 		),
-		urlHandler.NewURLHandler(
-			memStorage,
-			dbkeeper.NewDBKeeper(dbStorage),
-		),
+		urlHandler.NewURLHandler(storage, db),
 		opt.RedirectHost,
 	)
 
@@ -114,10 +108,9 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 				zap.String("addr", srv.Addr),
 			),
 			srv),
-		storage:         memStorage,
-		storageFilePath: storageFilePath,
 		shutdownTimeout: opt.ShutdownTimeout,
-		db: dbStorage,
+		db:              db,
+		memStorage:      memStorage,
 	}, nil
 }
 
@@ -134,11 +127,27 @@ func (us *URLShortener) Run(ctx context.Context) error {
 	errGr, errGrCtx := errgroup.WithContext(sigCtx)
 
 	errGr.Go(func() error {
-		if len(us.storageFilePath) > 0 {
-			if err := us.storage.LoadFromFile(us.storageFilePath); err != nil {
+		if us.db != nil {
+			_, err := us.db.Exec(`
+			CREATE TABLE
+				IF NOT EXISTS shortened_url (
+					short_url VARCHAR(10) PRIMARY KEY,
+					original_url VARCHAR(4000) UNIQUE NOT NULL
+				);
+			`)
+			if err != nil {
+				us.log.Info(
+					"failed to create table in database",
+					zap.Error(err),
+				)
+				return err
+			}
+		}
+
+		if us.memStorage != nil {
+			if err := us.memStorage.LoadFromFile(); err != nil {
 				us.log.Info(
 					"failed to load data from file",
-					zap.String("path", us.storageFilePath),
 					zap.Error(err),
 				)
 			}
@@ -157,21 +166,25 @@ func (us *URLShortener) Run(ctx context.Context) error {
 		defer cancel()
 
 		defer func() {
-			if err := us.storage.SaveToFile(us.storageFilePath); err != nil {
-				us.log.Error(
-					"failed to save data to file",
-					zap.String("path", us.storageFilePath),
-					zap.Error(err),
-				)
+			if us.memStorage != nil {
+				if err := us.memStorage.SaveToFile(); err != nil {
+					us.log.Error(
+						"failed to save data to file",
+						zap.Error(err),
+					)
+				}
 			}
+
 		}()
 
 		defer func() {
-			if err := us.db.Close(); err != nil {
-				us.log.Error(
-					"error closing connection to database",
-					zap.Error(err),
-				)
+			if us.db != nil {
+				if err := us.db.Close(); err != nil {
+					us.log.Error(
+						"error closing connection to database",
+						zap.Error(err),
+					)
+				}
 			}
 		}()
 
@@ -188,4 +201,26 @@ func connectionDB(dns string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed connection to database: %w", err)
 	}
 	return db, nil
+}
+
+func validateStorageFilePath(path string) (string, error) {
+	storageFilePath, err := fileutils.CreateFullPathFromRelative(path)
+	if err != nil {
+		return "", err
+	}
+
+	dir, _ := filepath.Split(storageFilePath)
+
+	if _, err := os.Stat(dir); err != nil {
+		switch {
+		case errors.Is(err, os.ErrNotExist):
+			if err := os.Mkdir(dir, os.ModeDir); err != nil {
+				return "", err
+			}
+		default:
+			return "", err
+		}
+
+	}
+	return storageFilePath, nil
 }

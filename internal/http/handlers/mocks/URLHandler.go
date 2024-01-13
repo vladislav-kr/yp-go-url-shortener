@@ -27,23 +27,23 @@ func (_m *URLHandler) Ping(ctx context.Context) error {
 	return r0
 }
 
-// ReadURL provides a mock function with given fields: alias
-func (_m *URLHandler) ReadURL(alias string) (string, error) {
-	ret := _m.Called(alias)
+// ReadURL provides a mock function with given fields: ctx, alias
+func (_m *URLHandler) ReadURL(ctx context.Context, alias string) (string, error) {
+	ret := _m.Called(ctx, alias)
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
-		return rf(alias)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return rf(ctx, alias)
 	}
-	if rf, ok := ret.Get(0).(func(string) string); ok {
-		r0 = rf(alias)
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, alias)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(alias)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, alias)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -51,23 +51,23 @@ func (_m *URLHandler) ReadURL(alias string) (string, error) {
 	return r0, r1
 }
 
-// SaveURL provides a mock function with given fields: url
-func (_m *URLHandler) SaveURL(url string) (string, error) {
-	ret := _m.Called(url)
+// SaveURL provides a mock function with given fields: ctx, url
+func (_m *URLHandler) SaveURL(ctx context.Context, url string) (string, error) {
+	ret := _m.Called(ctx, url)
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
-		return rf(url)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return rf(ctx, url)
 	}
-	if rf, ok := ret.Get(0).(func(string) string); ok {
-		r0 = rf(url)
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, url)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(url)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, url)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -16,8 +16,8 @@ import (
 
 //go:generate mockery --name URLHandler
 type URLHandler interface {
-	ReadURL(alias string) (string, error)
-	SaveURL(url string) (string, error)
+	ReadURL(ctx context.Context, alias string) (string, error)
+	SaveURL(ctx context.Context, url string) (string, error)
 	Ping(ctx context.Context) error
 }
 
@@ -52,7 +52,10 @@ func (h *Handlers) SaveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.urlHandler.SaveURL(string(data))
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*4)
+	defer cancel()
+
+	id, err := h.urlHandler.SaveURL(ctx, string(data))
 	if err != nil {
 		h.log.Error(
 			"failed to save url",
@@ -68,7 +71,11 @@ func (h *Handlers) SaveHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 	alias := chi.URLParam(r, "id")
-	url, err := h.urlHandler.ReadURL(alias)
+
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*4)
+	defer cancel()
+
+	url, err := h.urlHandler.ReadURL(ctx, alias)
 	if err != nil {
 		h.log.Error(
 			"failed to read url",
@@ -97,7 +104,10 @@ func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.urlHandler.SaveURL(req.URL)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*4)
+	defer cancel()
+
+	id, err := h.urlHandler.SaveURL(ctx, req.URL)
 	if err != nil {
 		h.log.Error(
 			"failed to save url",
@@ -114,9 +124,10 @@ func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) PingHandler(w http.ResponseWriter, r *http.Request) {
-	
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*2)
 	defer cancel()
+
 	if err := h.urlHandler.Ping(ctx); err != nil {
 		h.log.Error("no access to database", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)

@@ -8,34 +8,34 @@ import (
 
 //go:generate mockery --name Keeperer
 type Keeperer interface {
-	PostURL(url string) (string, error)
-	GetURL(id string) (string, error)
+	PostURL(ctx context.Context, url string) (string, error)
+	GetURL(ctx context.Context, id string) (string, error)
 }
 
-//go:generate mockery --name DBKeeperer
-type DBKeeperer interface {
-	Ping(ctx context.Context) error
+//go:generate mockery --name DBPinger
+type DBPinger interface {
+	PingContext(ctx context.Context) error
 }
 
 type URLHandler struct {
-	storage   Keeperer
-	dbStorage DBKeeperer
+	storage Keeperer
+	pingDB  DBPinger
 }
 
-func NewURLHandler(storage Keeperer, dbStorage DBKeeperer) *URLHandler {
+func NewURLHandler(storage Keeperer, pingDB DBPinger) *URLHandler {
 	return &URLHandler{
-		storage:   storage,
-		dbStorage: dbStorage,
+		storage: storage,
+		pingDB:  pingDB,
 	}
 }
 
-func (uh *URLHandler) ReadURL(alias string) (string, error) {
+func (uh *URLHandler) ReadURL(ctx context.Context, alias string) (string, error) {
 
 	if len(alias) == 0 {
 		return "", fmt.Errorf("alias is empty")
 	}
 
-	url, err := uh.storage.GetURL(alias)
+	url, err := uh.storage.GetURL(ctx, alias)
 	if err != nil {
 		return "", fmt.Errorf("failed to read url: %w", err)
 	}
@@ -44,14 +44,14 @@ func (uh *URLHandler) ReadURL(alias string) (string, error) {
 
 }
 
-func (uh *URLHandler) SaveURL(url string) (string, error) {
+func (uh *URLHandler) SaveURL(ctx context.Context, url string) (string, error) {
 
 	alias := ""
 	if _, err := netURL.ParseRequestURI(url); err != nil {
 		return alias, fmt.Errorf("invalid url: %w", err)
 	}
 
-	alias, err := uh.storage.PostURL(url)
+	alias, err := uh.storage.PostURL(ctx, url)
 	if err != nil {
 		return alias, fmt.Errorf("failed to save url: %w", err)
 	}
@@ -59,5 +59,5 @@ func (uh *URLHandler) SaveURL(url string) (string, error) {
 }
 
 func (uh *URLHandler) Ping(ctx context.Context) error {
-	return uh.dbStorage.Ping(ctx)
+	return uh.pingDB.PingContext(ctx)
 }
