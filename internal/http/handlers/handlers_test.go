@@ -299,21 +299,21 @@ func TestBatchHandler(t *testing.T) {
 			name: "data saved",
 			urls: []models.BatchRequest{
 				{
-					CorrelationId: "1",
+					CorrelationID: "1",
 					OriginalURL:   "https://practicum.yandex.ru/",
 				},
 				{
-					CorrelationId: "2",
+					CorrelationID: "2",
 					OriginalURL:   "https://ya.ru/",
 				},
 			},
 			expectedURLS: []models.BatchResponse{
 				{
-					CorrelationId: "1",
+					CorrelationID: "1",
 					ShortURL:      "dkh2ksukde",
 				},
 				{
-					CorrelationId: "2",
+					CorrelationID: "2",
 					ShortURL:      "fh43jfhfdq",
 				},
 			},

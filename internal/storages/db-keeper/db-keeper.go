@@ -73,7 +73,7 @@ func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]
 		}
 
 		batchResp = append(batchResp, models.BatchResponse{
-			CorrelationId: url.CorrelationId,
+			CorrelationID: url.CorrelationID,
 			ShortURL:      id,
 		})
 	}

@@ -71,7 +71,7 @@ func (k *Keeper) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]mo
 			k.storage[id] = url.OriginalURL
 			k.mutex.Unlock()
 			batchResp = append(batchResp, models.BatchResponse{
-				CorrelationId: url.CorrelationId,
+				CorrelationID: url.CorrelationID,
 				ShortURL:      id,
 			})
 		}
