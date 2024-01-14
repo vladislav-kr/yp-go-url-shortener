@@ -55,6 +55,30 @@ func (k *Keeper) GetURL(ctx context.Context, id string) (string, error) {
 		return val, nil
 	}
 }
+func (k *Keeper) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]models.BatchResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		batchResp := make([]models.BatchResponse, 0, len(urls))
+
+		for _, url := range urls {
+			id, err := cryptoutils.GenerateRandomString(10)
+			if err != nil {
+				return nil, err
+			}
+			k.mutex.Lock()
+			k.storage[id] = url.OriginalURL
+			k.mutex.Unlock()
+			batchResp = append(batchResp, models.BatchResponse{
+				CorrelationId: url.CorrelationId,
+				ShortURL:      id,
+			})
+		}
+
+		return batchResp, nil
+	}
+}
 
 func (k *Keeper) LoadFromFile() error {
 	if len(k.filePath) == 0 {

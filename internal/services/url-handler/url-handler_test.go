@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler/mocks"
 )
 
@@ -118,7 +119,7 @@ func TestSaveURL(t *testing.T) {
 			storage := mocks.NewKeeperer(t)
 
 			if tc.isCallMock {
-				storage.On("PostURL", mock.AnythingOfType("*context.timerCtx"),  tc.longURL).
+				storage.On("PostURL", mock.AnythingOfType("*context.timerCtx"), tc.longURL).
 					Return(tc.expectedAlias, tc.expectedErr)
 			}
 
@@ -162,14 +163,14 @@ func TestPing(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			storage := mocks.NewKeeperer(t)
 
 			var err error
 			if tc.isError {
 				err = errors.New("fail ping db")
 			}
-			
+
 			pingDB := mocks.NewDBPinger(t)
 
 			h := NewURLHandler(storage, pingDB)
@@ -186,6 +187,78 @@ func TestPing(t *testing.T) {
 			}
 
 			assert.NoError(t, errPing)
+
+		})
+
+	}
+
+}
+
+func TestSaveURLS(t *testing.T) {
+
+	cases := []struct {
+		name         string
+		urls         []models.BatchRequest
+		expectedURLS []models.BatchResponse
+		err          error
+		isError      bool
+	}{
+		{
+			name: "successful receiving url",
+			urls: []models.BatchRequest{
+				{
+					CorrelationId: "1",
+					OriginalURL:   "https://practicum.yandex.ru/",
+				},
+				{
+					CorrelationId: "2",
+					OriginalURL:   "https://ya.ru/",
+				},
+			},
+			expectedURLS: []models.BatchResponse{
+				{
+					CorrelationId: "1",
+					ShortURL:      "https://localhost:8080/dkh2ksukde",
+				},
+				{
+					CorrelationId: "2",
+					ShortURL:      "https://localhost:8080/fh43jfhfdq",
+				},
+			},
+		},
+		{
+			name:         "failed to receive url",
+			urls:         []models.BatchRequest{},
+			expectedURLS: nil,
+			err:          errors.New("no data to save"),
+			isError:      true,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			storage := mocks.NewKeeperer(t)
+
+			storage.On("SaveURLS", mock.AnythingOfType("*context.timerCtx"), tc.urls).
+				Return(tc.expectedURLS, tc.err)
+
+			h := NewURLHandler(storage, mocks.NewDBPinger(t))
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			respURLS, err := h.SaveURLS(ctx, tc.urls)
+
+			if tc.isError {
+				assert.Nil(t, respURLS)
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedURLS, respURLS)
 
 		})
 

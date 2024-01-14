@@ -72,7 +72,6 @@ func TestKeeperSaveReadFile(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	
 	saveData := map[string]string{
 		"fdfsfwewq2":  "https://ya.ru/",
 		"fdfdd455654": "https://practicum.yandex.ru/",

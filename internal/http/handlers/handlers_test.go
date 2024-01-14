@@ -284,3 +284,95 @@ func TestPingHandler(t *testing.T) {
 	}
 
 }
+
+func TestBatchHandler(t *testing.T) {
+
+	cases := []struct {
+		name           string
+		urls           []models.BatchRequest
+		expectedURLS   []models.BatchResponse
+		err            error
+		expectedStatus int
+		isError        bool
+	}{
+		{
+			name: "data saved",
+			urls: []models.BatchRequest{
+				{
+					CorrelationId: "1",
+					OriginalURL:   "https://practicum.yandex.ru/",
+				},
+				{
+					CorrelationId: "2",
+					OriginalURL:   "https://ya.ru/",
+				},
+			},
+			expectedURLS: []models.BatchResponse{
+				{
+					CorrelationId: "1",
+					ShortURL:      "dkh2ksukde",
+				},
+				{
+					CorrelationId: "2",
+					ShortURL:      "fh43jfhfdq",
+				},
+			},
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:           "no data to save",
+			urls:           []models.BatchRequest{},
+			expectedURLS:   []models.BatchResponse{},
+			err:            errors.New("no data to save"),
+			expectedStatus: http.StatusBadRequest,
+			isError:        true,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			urlHndl := mocks.NewURLHandler(t)
+
+			if !tc.isError {
+				urlHndl.On("SaveURLS", mock.AnythingOfType("*context.timerCtx"), tc.urls).
+					Return(tc.expectedURLS, tc.err)
+			}
+
+			h := NewHandlers(
+				zaptest.NewLogger(t),
+				urlHndl,
+				"http://localhost:8080",
+			)
+
+			rr := httptest.NewRecorder()
+
+			body, err := json.Marshal(tc.urls)
+			require.NoError(t, err)
+
+			req, err := http.NewRequest(
+				http.MethodPost,
+				"/",
+				strings.NewReader(string(body)),
+			)
+			require.NoError(t, err)
+
+			h.BatchHandler(rr, req)
+
+			result := rr.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tc.expectedStatus, result.StatusCode)
+
+			if !tc.isError && result.ContentLength > 0 {
+				respURLS := []models.BatchResponse{}
+				err = json.NewDecoder(result.Body).Decode(&respURLS)
+				assert.NoError(t, err)
+
+				assert.Equal(t, tc.expectedURLS, respURLS)
+			}
+
+		})
+	}
+
+}
