@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"go.uber.org/zap"
 )
@@ -62,6 +65,13 @@ func (h *Handlers) SaveHandler(w http.ResponseWriter, r *http.Request) {
 			"failed to save url",
 			zap.Error(err),
 		)
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -114,6 +124,13 @@ func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
 			"failed to save url",
 			zap.Error(err),
 		)
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
