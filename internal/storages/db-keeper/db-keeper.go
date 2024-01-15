@@ -3,10 +3,17 @@ package dbkeeper
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/lib/cryptoutils"
+)
+
+var (
+	ErrAlreadyExists= errors.New("the value already exists")
 )
 
 type DBKeeper struct {
@@ -36,6 +43,22 @@ func (k *DBKeeper) PostURL(ctx context.Context, url string) (string, error) {
 		id, url,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			sqlStatement := `SELECT short_url FROM shortened_url WHERE original_url=$1;`
+			row := k.db.QueryRowContext(
+				ctx,
+				sqlStatement,
+				url,
+			)
+			id := ""
+			if err := row.Scan(&id); err != nil {
+				return "", err
+			}
+
+			return id, ErrAlreadyExists
+		}
+
 		return "", err
 	}
 	return id, nil
