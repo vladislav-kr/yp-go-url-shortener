@@ -106,7 +106,8 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 					return
 				}
 				http.SetCookie(w, cookie)
-				next.ServeHTTP(w, r)
+				ctx := auth.ContextWithUserID(r.Context(), userID)
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
@@ -121,7 +122,8 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 					return
 				}
 				http.SetCookie(w, cookie)
-				next.ServeHTTP(w, r)
+				ctx := auth.ContextWithUserID(r.Context(), userID)
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
