@@ -60,7 +60,14 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 		if err != nil {
 			return nil, err
 		}
-		storage = dbkeeper.NewDBKeeper(db)
+		storage = dbkeeper.NewDBKeeper(log.With(
+			zap.String(
+				"component",
+				"dbkeeper",
+			),
+		),
+			db,
+		)
 	case len(opt.StorageFilePath) > 0:
 		storageFilePath, err := validateStorageFilePath(opt.StorageFilePath)
 		if err != nil {

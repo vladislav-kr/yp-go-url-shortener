@@ -16,7 +16,7 @@ func parseFlags(host, redirectHost, filePath, pgDNS *string) {
 	flag.StringVar(&fHost, "a", defHost, "address and port to run server")
 	flag.StringVar(&fRedirectHost, "b", defRedirectHost, "redirect address")
 	flag.StringVar(&fFilePath, "f", defFilePath, "redirect address")
-	flag.StringVar(pgDNS, "d", "", "database connection address")
+	flag.StringVar(pgDNS, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "database connection address")
 	flag.Parse()
 
 	if len(*host) == 0 {
