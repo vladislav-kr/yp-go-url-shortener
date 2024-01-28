@@ -32,12 +32,10 @@ func (a *Auth) CreateCookie(
 	}
 
 	return &http.Cookie{
-		Name:     key,
-		Value:    token,
-		Path:     "/",
-		MaxAge:   int(expiresAt.Seconds()),
-		HttpOnly: true,
-		Secure:   true,
+		Name:   key,
+		Value:  token,
+		Path:   "/",
+		MaxAge: int(expiresAt.Seconds()),
 	}, nil
 }
 
