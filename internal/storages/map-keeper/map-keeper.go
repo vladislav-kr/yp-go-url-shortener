@@ -1,6 +1,7 @@
 package mapkeeper
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -10,49 +11,64 @@ import (
 )
 
 type Keeper struct {
-	mutex   sync.RWMutex
-	storage map[string]string
+	mutex    sync.RWMutex
+	storage  map[string]string
+	filePath string
 }
 
-func New() *Keeper {
+func New(filePath string) *Keeper {
 	return &Keeper{
-		storage: map[string]string{},
+		storage:  map[string]string{},
+		filePath: filePath,
 	}
 }
 
-func (k *Keeper) PostURL(url string) (string, error) {
+func (k *Keeper) PostURL(ctx context.Context, url string) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+		id, err := cryptoutils.GenerateRandomString(10)
+		if err != nil {
+			return "", err
+		}
 
-	id, err := cryptoutils.GenerateRandomString(10)
-	if err != nil {
-		return "", err
+		k.mutex.Lock()
+		k.storage[id] = url
+		k.mutex.Unlock()
+		return id, nil
 	}
-
-	k.mutex.Lock()
-	k.storage[id] = url
-	k.mutex.Unlock()
-	return id, nil
 }
 
-func (k *Keeper) GetURL(id string) (string, error) {
-	k.mutex.RLock()
-	val, ok := k.storage[id]
-	k.mutex.RUnlock()
-	if !ok {
-		return "", fmt.Errorf("not found")
-	}
+func (k *Keeper) GetURL(ctx context.Context, id string) (string, error) {
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+		k.mutex.RLock()
+		val, ok := k.storage[id]
+		k.mutex.RUnlock()
+		if !ok {
+			return "", fmt.Errorf("not found")
+		}
 
-	return val, nil
+		return val, nil
+	}
 }
 
-func (k *Keeper) LoadFromFile(path string) error {
+func (k *Keeper) LoadFromFile() error {
+	if len(k.filePath) == 0 {
+		return nil
+	}
+
 	k.mutex.Lock()
 	defer k.mutex.Unlock()
 
-	c, err := file.NewConsumer(path)
+	c, err := file.NewConsumer(k.filePath)
 	if err != nil {
 		return err
 	}
-	
+
 	var url *models.FileURL
 	for c.More() {
 		url = &models.FileURL{}
@@ -63,7 +79,11 @@ func (k *Keeper) LoadFromFile(path string) error {
 	return c.Close()
 }
 
-func (k *Keeper) SaveToFile(path string) error {
+func (k *Keeper) SaveToFile() error {
+	if len(k.filePath) == 0 {
+		return nil
+	}
+
 	k.mutex.Lock()
 	defer k.mutex.Unlock()
 
@@ -71,7 +91,7 @@ func (k *Keeper) SaveToFile(path string) error {
 		return nil
 	}
 
-	p, err := file.NewProducer(path)
+	p, err := file.NewProducer(k.filePath)
 	if err != nil {
 		return err
 	}

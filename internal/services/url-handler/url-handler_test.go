@@ -40,7 +40,6 @@ func TestReadURL(t *testing.T) {
 			isError:     true,
 		},
 	}
-	db := mocks.NewDBKeeperer(t)
 
 	for _, tc := range cases {
 		tc := tc
@@ -51,13 +50,18 @@ func TestReadURL(t *testing.T) {
 			storage := mocks.NewKeeperer(t)
 
 			if tc.isCallMock {
-				storage.On("GetURL", tc.id).
+				storage.On("GetURL", mock.AnythingOfType("*context.timerCtx"), tc.id).
 					Return(tc.expectedURL, tc.expectedErr)
 			}
 
-			h := NewURLHandler(storage, db)
+			h := NewURLHandler(
+				storage,
+				mocks.NewDBPinger(t),
+			)
 
-			url, err := h.ReadURL(tc.id)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			url, err := h.ReadURL(ctx, tc.id)
 
 			if tc.isError {
 				assert.Empty(t, url)
@@ -105,8 +109,6 @@ func TestSaveURL(t *testing.T) {
 		},
 	}
 
-	db := mocks.NewDBKeeperer(t)
-
 	for _, tc := range cases {
 		tc := tc
 
@@ -116,13 +118,14 @@ func TestSaveURL(t *testing.T) {
 			storage := mocks.NewKeeperer(t)
 
 			if tc.isCallMock {
-				storage.On("PostURL", tc.longURL).
+				storage.On("PostURL", mock.AnythingOfType("*context.timerCtx"),  tc.longURL).
 					Return(tc.expectedAlias, tc.expectedErr)
 			}
 
-			h := NewURLHandler(storage, db)
-
-			alias, err := h.SaveURL(tc.longURL)
+			h := NewURLHandler(storage, mocks.NewDBPinger(t))
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			alias, err := h.SaveURL(ctx, tc.longURL)
 
 			if tc.isError {
 				assert.Empty(t, alias)
@@ -159,19 +162,20 @@ func TestPing(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
-			db := mocks.NewDBKeeperer(t)
+			
 			storage := mocks.NewKeeperer(t)
 
 			var err error
 			if tc.isError {
 				err = errors.New("fail ping db")
 			}
-			db.
-				On("Ping", mock.AnythingOfType("*context.timerCtx")).
-				Return(err)
+			
+			pingDB := mocks.NewDBPinger(t)
 
-			h := NewURLHandler(storage, db)
+			h := NewURLHandler(storage, pingDB)
+			pingDB.
+				On("PingContext", mock.AnythingOfType("*context.timerCtx")).
+				Return(err)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			errPing := h.Ping(ctx)
