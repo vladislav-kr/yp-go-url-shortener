@@ -239,6 +239,10 @@ func (h *Handlers) UserUrlsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for i := range urls {
+		urls[i].ShortURL = fmt.Sprintf("%s/%s", h.redirectHost, urls[i].ShortURL)
+	}
+
 	if len(urls) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
