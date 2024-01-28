@@ -29,7 +29,7 @@ func NewDBKeeper(log *zap.Logger, db *sql.DB) *DBKeeper {
 	}
 }
 
-func (k *DBKeeper) PostURL(ctx context.Context, url string) (string, error) {
+func (k *DBKeeper) PostURL(ctx context.Context, url string, userID string) (string, error) {
 
 	id, err := cryptoutils.GenerateRandomString(10)
 	if err != nil {
@@ -37,13 +37,13 @@ func (k *DBKeeper) PostURL(ctx context.Context, url string) (string, error) {
 	}
 
 	sqlStatement := `
-		INSERT INTO shortened_url (short_url, original_url)
-		VALUES ($1, $2)`
+		INSERT INTO shortened_url (short_url, original_url, user_id)
+		VALUES ($1, $2, $3)`
 
 	_, err = k.db.ExecContext(
 		ctx,
 		sqlStatement,
-		id, url,
+		id, url, userID,
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -66,7 +66,7 @@ func (k *DBKeeper) PostURL(ctx context.Context, url string) (string, error) {
 	}
 	return id, nil
 }
-func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]models.BatchResponse, error) {
+func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest, userID string) ([]models.BatchResponse, error) {
 	tx, err := k.db.BeginTx(ctx, nil)
 
 	if err != nil {
@@ -81,8 +81,8 @@ func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]
 	}()
 
 	sqlStatement := `
-		INSERT INTO shortened_url(short_url, original_url)
-		VALUES ($1, $2)`
+		INSERT INTO shortened_url(short_url, original_url, user_id)
+		VALUES ($1, $2, $3)`
 
 	stmt, err := tx.PrepareContext(ctx, sqlStatement)
 	if err != nil {
@@ -105,7 +105,7 @@ func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]
 			return nil, err
 		}
 
-		_, err = stmt.ExecContext(ctx, id, url.OriginalURL)
+		_, err = stmt.ExecContext(ctx, id, url.OriginalURL, userID)
 
 		if err != nil {
 			return nil, err
@@ -135,4 +135,37 @@ func (k *DBKeeper) GetURL(ctx context.Context, id string) (string, error) {
 		return "", fmt.Errorf("records for the key %s do not exist", id)
 	}
 	return fullURL, nil
+}
+
+func (k *DBKeeper) GetURLS(ctx context.Context, userID string) ([]models.MassURL, error) {
+	sqlStatement := `
+		SELECT
+			short_url,
+			original_url
+		FROM
+			shortened_url
+		WHERE
+			user_id = $1;`
+
+	rows, err := k.db.QueryContext(ctx, sqlStatement, userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return []models.MassURL{}, nil
+
+		default:
+			return nil, err
+		}
+	}
+
+	urls := []models.MassURL{}
+	for rows.Next() {
+		url := models.MassURL{}
+        err = rows.Scan(&url.ShortURL, &url.OriginalURL)
+        if err != nil {
+            return nil, err
+        }
+		urls = append(urls, url)
+    }
+	return urls, nil
 }

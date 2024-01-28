@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/auth"
 	urlhandler "github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler"
 	"go.uber.org/zap"
 )
@@ -19,9 +20,10 @@ import (
 //go:generate mockery --name URLHandler
 type URLHandler interface {
 	ReadURL(ctx context.Context, alias string) (string, error)
-	SaveURL(ctx context.Context, url string) (string, error)
-	SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]models.BatchResponse, error)
+	SaveURL(ctx context.Context, url string, userID string) (string, error)
+	SaveURLS(ctx context.Context, urls []models.BatchRequest, userID string) ([]models.BatchResponse, error)
 	Ping(ctx context.Context) error
+	GetURLS(ctx context.Context, userID string) ([]models.MassURL, error)
 }
 
 type Handlers struct {
@@ -58,7 +60,9 @@ func (h *Handlers) SaveHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*4)
 	defer cancel()
 
-	id, err := h.urlHandler.SaveURL(ctx, string(data))
+	userID := auth.UserIDFromContext(r.Context())
+
+	id, err := h.urlHandler.SaveURL(ctx, string(data), userID)
 	if err != nil {
 		switch {
 		case errors.Is(err, urlhandler.ErrAlreadyExists):
@@ -122,7 +126,9 @@ func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*4)
 	defer cancel()
 
-	id, err := h.urlHandler.SaveURL(ctx, req.URL)
+	userID := auth.UserIDFromContext(r.Context())
+
+	id, err := h.urlHandler.SaveURL(ctx, req.URL, userID)
 	if err != nil {
 		switch {
 		case errors.Is(err, urlhandler.ErrAlreadyExists):
@@ -186,10 +192,12 @@ func (h *Handlers) BatchHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	userID := auth.UserIDFromContext(r.Context())
 
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
-	urls, err := h.urlHandler.SaveURLS(ctx, req)
+
+	urls, err := h.urlHandler.SaveURLS(ctx, req, userID)
 	if err != nil {
 		h.log.Error(
 			"failed to save url",
@@ -206,4 +214,30 @@ func (h *Handlers) BatchHandler(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, urls)
 
+}
+
+func (h *Handlers) UserUrlsHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	userID := auth.UserIDFromContext(r.Context())
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+	defer cancel()
+
+	urls, err := h.urlHandler.GetURLS(ctx, userID)
+	if err != nil {
+		h.log.Error(
+			"failed to read urls",
+			zap.Error(err),
+		)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if len(urls) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, urls)
 }

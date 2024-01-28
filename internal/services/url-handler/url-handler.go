@@ -16,9 +16,10 @@ var (
 
 //go:generate mockery --name Keeperer
 type Keeperer interface {
-	PostURL(ctx context.Context, url string) (string, error)
+	PostURL(ctx context.Context, url string, userID string) (string, error)
 	GetURL(ctx context.Context, id string) (string, error)
-	SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]models.BatchResponse, error)
+	SaveURLS(ctx context.Context, urls []models.BatchRequest, userID string) ([]models.BatchResponse, error)
+	GetURLS(ctx context.Context, userID string) ([]models.MassURL, error)
 }
 
 //go:generate mockery --name DBPinger
@@ -53,14 +54,14 @@ func (uh *URLHandler) ReadURL(ctx context.Context, alias string) (string, error)
 
 }
 
-func (uh *URLHandler) SaveURL(ctx context.Context, url string) (string, error) {
+func (uh *URLHandler) SaveURL(ctx context.Context, url string, userID string) (string, error) {
 
 	alias := ""
 	if _, err := netURL.ParseRequestURI(url); err != nil {
 		return alias, fmt.Errorf("invalid url: %w", err)
 	}
 
-	alias, err := uh.storage.PostURL(ctx, url)
+	alias, err := uh.storage.PostURL(ctx, url, userID)
 	if err != nil {
 		switch {
 		case errors.Is(err, dbkeeper.ErrAlreadyExists):
@@ -80,9 +81,14 @@ func (uh *URLHandler) Ping(ctx context.Context) error {
 func (uh *URLHandler) SaveURLS(
 	ctx context.Context,
 	urls []models.BatchRequest,
+	userID string,
 ) (
 	[]models.BatchResponse,
 	error,
 ) {
-	return uh.storage.SaveURLS(ctx, urls)
+	return uh.storage.SaveURLS(ctx, urls, userID)
+}
+
+func (uh *URLHandler) GetURLS(ctx context.Context, userID string) ([]models.MassURL, error) {
+	return uh.storage.GetURLS(ctx, userID)
 }

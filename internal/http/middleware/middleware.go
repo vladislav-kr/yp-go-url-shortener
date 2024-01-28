@@ -6,17 +6,21 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/auth"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/compress"
 	"go.uber.org/zap"
 )
 
 type Middleware struct {
 	log *zap.Logger
+	auth *auth.Auth
 }
 
-func New(log *zap.Logger) *Middleware {
+func New(log *zap.Logger, auth *auth.Auth) *Middleware {
 	return &Middleware{
 		log: log,
+		auth: auth,
 	}
 }
 
@@ -86,4 +90,43 @@ func (m *Middleware) NewCompressHandler(contentTypes []string) func(next http.Ha
 			next.ServeHTTP(ow, r)
 		})
 	}
+}
+
+func (m *Middleware) Auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+
+			cookie, err := auth.CookieFromRequest(r)
+			if err != nil {
+				cookie, err := m.auth.CreateCookie(time.Hour*3, uuid.New().String())
+				if err != nil {
+					m.log.Error("failed to create new cookie", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				http.SetCookie(w, cookie)
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			claims, err := m.auth.Validate(cookie.Value)
+			if err != nil {
+				m.log.Error("token is invalid", zap.Error(err))
+				cookie, err := m.auth.CreateCookie(time.Hour*3, uuid.New().String())
+				if err != nil {
+					m.log.Error("failed to create new cookie", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				http.SetCookie(w, cookie)
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			ctx := auth.ContextWithUserID(r.Context(), claims.UserID)
+			rr := r.WithContext(ctx)
+			
+			next.ServeHTTP(w, rr)
+		},
+	)
 }

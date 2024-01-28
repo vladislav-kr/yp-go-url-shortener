@@ -23,7 +23,7 @@ func New(filePath string) *Keeper {
 	}
 }
 
-func (k *Keeper) PostURL(ctx context.Context, url string) (string, error) {
+func (k *Keeper) PostURL(ctx context.Context, url string, _ string) (string, error) {
 	select {
 	case <-ctx.Done():
 		return "", ctx.Err()
@@ -55,7 +55,7 @@ func (k *Keeper) GetURL(ctx context.Context, id string) (string, error) {
 		return val, nil
 	}
 }
-func (k *Keeper) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]models.BatchResponse, error) {
+func (k *Keeper) SaveURLS(ctx context.Context, urls []models.BatchRequest, _ string) ([]models.BatchResponse, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -128,4 +128,8 @@ func (k *Keeper) SaveToFile() error {
 	}
 
 	return p.Close()
+}
+
+func (k *Keeper) GetURLS(_ context.Context, _ string) ([]models.MassURL, error) {
+	return nil, fmt.Errorf("method not implemented")
 }

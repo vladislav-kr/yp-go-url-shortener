@@ -15,6 +15,32 @@ type URLHandler struct {
 	mock.Mock
 }
 
+// GetURLS provides a mock function with given fields: ctx, userID
+func (_m *URLHandler) GetURLS(ctx context.Context, userID string) ([]models.MassURL, error) {
+	ret := _m.Called(ctx, userID)
+
+	var r0 []models.MassURL
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]models.MassURL, error)); ok {
+		return rf(ctx, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []models.MassURL); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]models.MassURL)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Ping provides a mock function with given fields: ctx
 func (_m *URLHandler) Ping(ctx context.Context) error {
 	ret := _m.Called(ctx)
@@ -53,23 +79,23 @@ func (_m *URLHandler) ReadURL(ctx context.Context, alias string) (string, error)
 	return r0, r1
 }
 
-// SaveURL provides a mock function with given fields: ctx, url
-func (_m *URLHandler) SaveURL(ctx context.Context, url string) (string, error) {
-	ret := _m.Called(ctx, url)
+// SaveURL provides a mock function with given fields: ctx, url, userID
+func (_m *URLHandler) SaveURL(ctx context.Context, url string, userID string) (string, error) {
+	ret := _m.Called(ctx, url, userID)
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
-		return rf(ctx, url)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, url, userID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
-		r0 = rf(ctx, url)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+		r0 = rf(ctx, url, userID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, url)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, url, userID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -77,25 +103,25 @@ func (_m *URLHandler) SaveURL(ctx context.Context, url string) (string, error) {
 	return r0, r1
 }
 
-// SaveURLS provides a mock function with given fields: ctx, urls
-func (_m *URLHandler) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]models.BatchResponse, error) {
-	ret := _m.Called(ctx, urls)
+// SaveURLS provides a mock function with given fields: ctx, urls, userID
+func (_m *URLHandler) SaveURLS(ctx context.Context, urls []models.BatchRequest, userID string) ([]models.BatchResponse, error) {
+	ret := _m.Called(ctx, urls, userID)
 
 	var r0 []models.BatchResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, []models.BatchRequest) ([]models.BatchResponse, error)); ok {
-		return rf(ctx, urls)
+	if rf, ok := ret.Get(0).(func(context.Context, []models.BatchRequest, string) ([]models.BatchResponse, error)); ok {
+		return rf(ctx, urls, userID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, []models.BatchRequest) []models.BatchResponse); ok {
-		r0 = rf(ctx, urls)
+	if rf, ok := ret.Get(0).(func(context.Context, []models.BatchRequest, string) []models.BatchResponse); ok {
+		r0 = rf(ctx, urls, userID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]models.BatchResponse)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, []models.BatchRequest) error); ok {
-		r1 = rf(ctx, urls)
+	if rf, ok := ret.Get(1).(func(context.Context, []models.BatchRequest, string) error); ok {
+		r1 = rf(ctx, urls, userID)
 	} else {
 		r1 = ret.Error(1)
 	}
