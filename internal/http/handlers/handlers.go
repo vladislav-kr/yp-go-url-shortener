@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
+	urlhandler "github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler"
 	"go.uber.org/zap"
 )
 
@@ -58,12 +60,24 @@ func (h *Handlers) SaveHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.urlHandler.SaveURL(ctx, string(data))
 	if err != nil {
-		h.log.Error(
-			"failed to save url",
-			zap.Error(err),
-		)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, urlhandler.ErrAlreadyExists):
+			h.log.Info(
+				"the original url exists in the database",
+				zap.String("url", string(data)),
+				zap.Error(err),
+			)
+			render.Status(r, http.StatusConflict)
+			render.PlainText(w, r, fmt.Sprintf("%s/%s", h.redirectHost, id))
+			return
+		default:
+			h.log.Error(
+				"failed to save url",
+				zap.Error(err),
+			)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 
 	render.Status(r, http.StatusCreated)
@@ -110,12 +124,26 @@ func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.urlHandler.SaveURL(ctx, req.URL)
 	if err != nil {
-		h.log.Error(
-			"failed to save url",
-			zap.Error(err),
-		)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		switch {
+		case errors.Is(err, urlhandler.ErrAlreadyExists):
+			h.log.Info(
+				"the original url exists in the database",
+				zap.String("url", req.URL),
+				zap.Error(err),
+			)
+			render.Status(r, http.StatusConflict)
+			render.JSON(w, r, models.URLResponse{
+				Result: fmt.Sprintf("%s/%s", h.redirectHost, id),
+			})
+			return
+		default:
+			h.log.Error(
+				"failed to save url",
+				zap.Error(err),
+			)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 
 	render.Status(r, http.StatusCreated)

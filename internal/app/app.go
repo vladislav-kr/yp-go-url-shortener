@@ -60,7 +60,14 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 		if err != nil {
 			return nil, err
 		}
-		storage = dbkeeper.NewDBKeeper(db)
+		storage = dbkeeper.NewDBKeeper(log.With(
+			zap.String(
+				"component",
+				"dbkeeper",
+			),
+		),
+			db,
+		)
 	case len(opt.StorageFilePath) > 0:
 		storageFilePath, err := validateStorageFilePath(opt.StorageFilePath)
 		if err != nil {
@@ -128,16 +135,44 @@ func (us *URLShortener) Run(ctx context.Context) error {
 
 	errGr.Go(func() error {
 		if us.db != nil {
-			_, err := us.db.Exec(`
+
+			tx, err := us.db.BeginTx(ctx, nil)
+			if err != nil {
+				us.log.Info(
+					"failed to create transaction",
+					zap.Error(err),
+				)
+				return err
+			}
+
+			defer tx.Rollback()
+			_, err = tx.ExecContext(ctx, `
 			CREATE TABLE
 				IF NOT EXISTS shortened_url (
 					short_url VARCHAR(10) PRIMARY KEY,
-					original_url VARCHAR(4000) UNIQUE NOT NULL
+					original_url VARCHAR(4000) NOT NULL
 				);
 			`)
 			if err != nil {
 				us.log.Info(
-					"failed to create table in database",
+					"failed to create table shortened_url",
+					zap.Error(err),
+				)
+				return err
+			}
+			_, err = tx.ExecContext(ctx,
+				`CREATE UNIQUE INDEX IF NOT EXISTS orig_url_idx ON shortened_url (original_url)`)
+			if err != nil {
+				us.log.Info(
+					"failed to create index",
+					zap.String("field", "original_url"),
+					zap.Error(err),
+				)
+				return err
+			}
+			if err := tx.Commit(); err != nil {
+				us.log.Info(
+					"failed to apply changes to the database",
 					zap.Error(err),
 				)
 				return err

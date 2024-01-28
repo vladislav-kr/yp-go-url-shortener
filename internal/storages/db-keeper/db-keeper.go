@@ -3,19 +3,29 @@ package dbkeeper
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/lib/cryptoutils"
+	"go.uber.org/zap"
+)
+
+var (
+	ErrAlreadyExists = errors.New("the value already exists")
 )
 
 type DBKeeper struct {
-	db *sql.DB
+	db  *sql.DB
+	log *zap.Logger
 }
 
-func NewDBKeeper(db *sql.DB) *DBKeeper {
+func NewDBKeeper(log *zap.Logger, db *sql.DB) *DBKeeper {
 	return &DBKeeper{
-		db: db,
+		db:  db,
+		log: log,
 	}
 }
 
@@ -36,6 +46,22 @@ func (k *DBKeeper) PostURL(ctx context.Context, url string) (string, error) {
 		id, url,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			sqlStatement := `SELECT short_url FROM shortened_url WHERE original_url=$1;`
+			row := k.db.QueryRowContext(
+				ctx,
+				sqlStatement,
+				url,
+			)
+			id := ""
+			if err := row.Scan(&id); err != nil {
+				return "", err
+			}
+
+			return id, ErrAlreadyExists
+		}
+
 		return "", err
 	}
 	return id, nil
@@ -46,7 +72,13 @@ func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			k.log.Error("fail rollback",
+				zap.Error(err),
+			)
+		}
+	}()
 
 	sqlStatement := `
 		INSERT INTO shortened_url(short_url, original_url)
@@ -56,7 +88,14 @@ func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]
 	if err != nil {
 		return nil, err
 	}
-	defer stmt.Close()
+
+	defer func() {
+		if err := stmt.Close(); err != nil {
+			k.log.Error("failed close of prepared statement",
+				zap.Error(err),
+			)
+		}
+	}()
 
 	batchResp := make([]models.BatchResponse, 0, len(urls))
 

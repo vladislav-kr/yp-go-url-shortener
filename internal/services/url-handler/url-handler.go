@@ -2,10 +2,16 @@ package urlhandler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	netURL "net/url"
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
+	dbkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/db-keeper"
+)
+
+var (
+	ErrAlreadyExists = errors.New("the value already exists")
 )
 
 //go:generate mockery --name Keeperer
@@ -56,8 +62,14 @@ func (uh *URLHandler) SaveURL(ctx context.Context, url string) (string, error) {
 
 	alias, err := uh.storage.PostURL(ctx, url)
 	if err != nil {
-		return alias, fmt.Errorf("failed to save url: %w", err)
+		switch {
+		case errors.Is(err, dbkeeper.ErrAlreadyExists):
+			return alias, ErrAlreadyExists
+		default:
+			return alias, fmt.Errorf("failed to save url: %w", err)
+		}
 	}
+
 	return alias, nil
 }
 
