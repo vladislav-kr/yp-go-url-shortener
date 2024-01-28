@@ -157,15 +157,19 @@ func (k *DBKeeper) GetURLS(ctx context.Context, userID string) ([]models.MassURL
 			return nil, err
 		}
 	}
+	
+	if rows.Err() != nil {
+		return nil, err
+	}
 
 	urls := []models.MassURL{}
 	for rows.Next() {
 		url := models.MassURL{}
-        err = rows.Scan(&url.ShortURL, &url.OriginalURL)
-        if err != nil {
-            return nil, err
-        }
+		err = rows.Scan(&url.ShortURL, &url.OriginalURL)
+		if err != nil {
+			return nil, err
+		}
 		urls = append(urls, url)
-    }
+	}
 	return urls, nil
 }
