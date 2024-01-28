@@ -25,7 +25,7 @@ func NewRouter(
 			"application/json",
 			"text/html",
 		}),
-		
+		m.Auth,
 	)
 
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
@@ -33,15 +33,10 @@ func NewRouter(
 	})
 	router.Get("/ping", h.PingHandler)
 	router.Get("/{id}", h.RedirectHandler)
-
-	router.Group(func(r chi.Router) {
-		r.Use(m.Auth)
-		r.Post("/", h.SaveHandler)
-		r.Post("/api/shorten", h.SaveJSONHandler)
-		r.Post("/api/shorten/batch", h.BatchHandler)
-		r.Get("/api/user/urls", h.UserUrlsHandler)
-	})
-	
+	router.Post("/", h.SaveHandler)
+	router.Post("/api/shorten", h.SaveJSONHandler)
+	router.Post("/api/shorten/batch", h.BatchHandler)
+	router.Get("/api/user/urls", h.UserUrlsHandler)
 
 	return router
 }
