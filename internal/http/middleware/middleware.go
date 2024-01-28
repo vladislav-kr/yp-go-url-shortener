@@ -13,13 +13,13 @@ import (
 )
 
 type Middleware struct {
-	log *zap.Logger
+	log  *zap.Logger
 	auth *auth.Auth
 }
 
 func New(log *zap.Logger, auth *auth.Auth) *Middleware {
 	return &Middleware{
-		log: log,
+		log:  log,
 		auth: auth,
 	}
 }
@@ -98,34 +98,38 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 
 			cookie, err := auth.CookieFromRequest(r)
 			if err != nil {
-				cookie, err := m.auth.CreateCookie(time.Hour*3, uuid.New().String())
+				userID := uuid.New().String()
+				cookie, err := m.auth.CreateCookie(time.Hour*3, userID)
 				if err != nil {
 					m.log.Error("failed to create new cookie", zap.Error(err))
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 				http.SetCookie(w, cookie)
-				w.WriteHeader(http.StatusUnauthorized)
+				ctx := auth.ContextWithUserID(r.Context(), userID)
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
 			claims, err := m.auth.Validate(cookie.Value)
 			if err != nil {
+				userID := uuid.New().String()
 				m.log.Error("token is invalid", zap.Error(err))
-				cookie, err := m.auth.CreateCookie(time.Hour*3, uuid.New().String())
+				cookie, err := m.auth.CreateCookie(time.Hour*3, userID)
 				if err != nil {
 					m.log.Error("failed to create new cookie", zap.Error(err))
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 				http.SetCookie(w, cookie)
-				w.WriteHeader(http.StatusUnauthorized)
+				ctx := auth.ContextWithUserID(r.Context(), userID)
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
 			ctx := auth.ContextWithUserID(r.Context(), claims.UserID)
 			rr := r.WithContext(ctx)
-			
+
 			next.ServeHTTP(w, rr)
 		},
 	)

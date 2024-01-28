@@ -53,7 +53,7 @@ func TestSaveHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			urlHndl := mocks.NewURLHandler(t)
-			urlHndl.On("SaveURL", mock.AnythingOfType("*context.timerCtx"), tc.url).
+			urlHndl.On("SaveURL", mock.AnythingOfType("*context.timerCtx"), tc.url, "").
 				Return(tc.alias, tc.err)
 
 			h := NewHandlers(
@@ -195,7 +195,7 @@ func TestSaveJSONHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			urlHndl := mocks.NewURLHandler(t)
-			urlHndl.On("SaveURL", mock.AnythingOfType("*context.timerCtx"), tc.url.URL).
+			urlHndl.On("SaveURL", mock.AnythingOfType("*context.timerCtx"), tc.url.URL, "").
 				Return(tc.alias, tc.err)
 
 			h := NewHandlers(
@@ -336,7 +336,7 @@ func TestBatchHandler(t *testing.T) {
 			urlHndl := mocks.NewURLHandler(t)
 
 			if !tc.isError {
-				urlHndl.On("SaveURLS", mock.AnythingOfType("*context.timerCtx"), tc.urls).
+				urlHndl.On("SaveURLS", mock.AnythingOfType("*context.timerCtx"), tc.urls, "").
 					Return(tc.expectedURLS, tc.err)
 			}
 

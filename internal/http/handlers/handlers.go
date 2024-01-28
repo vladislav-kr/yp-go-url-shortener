@@ -220,6 +220,12 @@ func (h *Handlers) UserUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	userID := auth.UserIDFromContext(r.Context())
+
+	if len(userID) == 0 {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
 

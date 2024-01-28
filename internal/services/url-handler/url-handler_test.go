@@ -119,7 +119,7 @@ func TestSaveURL(t *testing.T) {
 			storage := mocks.NewKeeperer(t)
 
 			if tc.isCallMock {
-				storage.On("PostURL", mock.AnythingOfType("*context.timerCtx"), tc.longURL).
+				storage.On("PostURL", mock.AnythingOfType("*context.timerCtx"), tc.longURL, "").
 					Return(tc.expectedAlias, tc.expectedErr)
 			}
 
@@ -243,7 +243,7 @@ func TestSaveURLS(t *testing.T) {
 
 			storage := mocks.NewKeeperer(t)
 
-			storage.On("SaveURLS", mock.AnythingOfType("*context.timerCtx"), tc.urls).
+			storage.On("SaveURLS", mock.AnythingOfType("*context.timerCtx"), tc.urls, "").
 				Return(tc.expectedURLS, tc.err)
 
 			h := NewURLHandler(storage, mocks.NewDBPinger(t))
