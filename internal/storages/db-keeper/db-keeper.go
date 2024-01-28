@@ -43,7 +43,7 @@ func (k *DBKeeper) PostURL(ctx context.Context, url string, userID string) (stri
 	_, err = k.db.ExecContext(
 		ctx,
 		sqlStatement,
-		id, url, userID,
+		id, url, NullUserID(userID),
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -105,7 +105,7 @@ func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest, use
 			return nil, err
 		}
 
-		_, err = stmt.ExecContext(ctx, id, url.OriginalURL, userID)
+		_, err = stmt.ExecContext(ctx, id, url.OriginalURL, NullUserID(userID))
 
 		if err != nil {
 			return nil, err
@@ -157,7 +157,7 @@ func (k *DBKeeper) GetURLS(ctx context.Context, userID string) ([]models.MassURL
 			return nil, err
 		}
 	}
-	
+
 	if rows.Err() != nil {
 		return nil, err
 	}
@@ -172,4 +172,17 @@ func (k *DBKeeper) GetURLS(ctx context.Context, userID string) ([]models.MassURL
 		urls = append(urls, url)
 	}
 	return urls, nil
+}
+
+func NullUserID(userID string) sql.NullString {
+	var valid bool
+	if len(userID) > 0 {
+		valid = true
+	}
+
+	return sql.NullString{
+		String: userID,
+		Valid:  valid,
+	}
+
 }
