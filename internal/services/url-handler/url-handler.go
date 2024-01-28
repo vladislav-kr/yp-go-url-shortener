@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	netURL "net/url"
+
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 )
 
 //go:generate mockery --name Keeperer
 type Keeperer interface {
 	PostURL(ctx context.Context, url string) (string, error)
 	GetURL(ctx context.Context, id string) (string, error)
+	SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]models.BatchResponse, error)
 }
 
 //go:generate mockery --name DBPinger
@@ -60,4 +63,14 @@ func (uh *URLHandler) SaveURL(ctx context.Context, url string) (string, error) {
 
 func (uh *URLHandler) Ping(ctx context.Context) error {
 	return uh.pingDB.PingContext(ctx)
+}
+
+func (uh *URLHandler) SaveURLS(
+	ctx context.Context,
+	urls []models.BatchRequest,
+) (
+	[]models.BatchResponse,
+	error,
+) {
+	return uh.storage.SaveURLS(ctx, urls)
 }

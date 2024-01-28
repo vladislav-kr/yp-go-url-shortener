@@ -35,6 +35,7 @@ func NewRouter(
 	router.Post("/", h.SaveHandler)
 	router.Get("/{id}", h.RedirectHandler)
 	router.Post("/api/shorten", h.SaveJSONHandler)
+	router.Post("/api/shorten/batch", h.BatchHandler)
 
 	return router
 }

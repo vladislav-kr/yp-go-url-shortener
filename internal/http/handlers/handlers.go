@@ -18,6 +18,7 @@ import (
 type URLHandler interface {
 	ReadURL(ctx context.Context, alias string) (string, error)
 	SaveURL(ctx context.Context, url string) (string, error)
+	SaveURLS(ctx context.Context, urls []models.BatchRequest) ([]models.BatchResponse, error)
 	Ping(ctx context.Context) error
 }
 
@@ -135,4 +136,46 @@ func (h *Handlers) PingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+func (h *Handlers) BatchHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	req := []models.BatchRequest{}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.log.Error(
+			"failed to read JSON request body",
+			zap.Error(err),
+		)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if len(req) == 0 {
+		h.log.Error(
+			"no data to save",
+		)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+	defer cancel()
+	urls, err := h.urlHandler.SaveURLS(ctx, req)
+	if err != nil {
+		h.log.Error(
+			"failed to save url",
+			zap.Error(err),
+		)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	for i := range urls {
+		urls[i].ShortURL = fmt.Sprintf("%s/%s", h.redirectHost, urls[i].ShortURL)
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.JSON(w, r, urls)
+
 }
