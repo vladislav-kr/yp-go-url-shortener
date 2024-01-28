@@ -1,6 +1,7 @@
 package urlhandler
 
 import (
+	"context"
 	"fmt"
 	netURL "net/url"
 )
@@ -11,13 +12,20 @@ type Keeperer interface {
 	GetURL(id string) (string, error)
 }
 
-type URLHandler struct {
-	storage Keeperer
+//go:generate mockery --name DBKeeperer
+type DBKeeperer interface {
+	Ping(ctx context.Context) error
 }
 
-func NewURLHandler(storage Keeperer) *URLHandler {
+type URLHandler struct {
+	storage   Keeperer
+	dbStorage DBKeeperer
+}
+
+func NewURLHandler(storage Keeperer, dbStorage DBKeeperer) *URLHandler {
 	return &URLHandler{
-		storage: storage,
+		storage:   storage,
+		dbStorage: dbStorage,
 	}
 }
 
@@ -48,4 +56,8 @@ func (uh *URLHandler) SaveURL(url string) (string, error) {
 		return alias, fmt.Errorf("failed to save url: %w", err)
 	}
 	return alias, nil
+}
+
+func (uh *URLHandler) Ping(ctx context.Context) error {
+	return uh.dbStorage.Ping(ctx)
 }

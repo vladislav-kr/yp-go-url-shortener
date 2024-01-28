@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,9 +17,14 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/lib/fileutils"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/server"
 	urlHandler "github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler"
+	dbkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/db-keeper"
 	mapkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/map-keeper"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+
+	"database/sql"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type URLShortener struct {
@@ -27,6 +33,7 @@ type URLShortener struct {
 	storage         *mapkeeper.Keeper
 	storageFilePath string
 	shutdownTimeout time.Duration
+	db              *sql.DB
 }
 
 type Option struct {
@@ -37,9 +44,15 @@ type Option struct {
 	IdleTimeout     time.Duration
 	ShutdownTimeout time.Duration
 	StorageFilePath string
+	StorageDBDNS    string
 }
 
 func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
+
+	dbStorage, err := connectionDB(opt.StorageDBDNS)
+	if err != nil {
+		return nil, err
+	}
 
 	storageFilePath, err := fileutils.CreateFullPathFromRelative(opt.StorageFilePath)
 	if err != nil {
@@ -71,6 +84,7 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 		),
 		urlHandler.NewURLHandler(
 			memStorage,
+			dbkeeper.NewDBKeeper(dbStorage),
 		),
 		opt.RedirectHost,
 	)
@@ -103,6 +117,7 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 		storage:         memStorage,
 		storageFilePath: storageFilePath,
 		shutdownTimeout: opt.ShutdownTimeout,
+		db: dbStorage,
 	}, nil
 }
 
@@ -151,9 +166,26 @@ func (us *URLShortener) Run(ctx context.Context) error {
 			}
 		}()
 
+		defer func() {
+			if err := us.db.Close(); err != nil {
+				us.log.Error(
+					"error closing connection to database",
+					zap.Error(err),
+				)
+			}
+		}()
+
 		return us.server.Stop(ctx)
 	})
 
 	return errGr.Wait()
 
+}
+
+func connectionDB(dns string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", dns)
+	if err != nil {
+		return nil, fmt.Errorf("failed connection to database: %w", err)
+	}
+	return db, nil
 }
