@@ -39,6 +39,7 @@ func (m *Middleware) Logger(next http.Handler) http.Handler {
 					zap.Int("status", ww.Status()),
 					zap.Int("bytes", ww.BytesWritten()),
 					zap.Duration("duration", time.Since(t)),
+					zap.String("user-id", auth.UserIDFromContext(r.Context())),
 				)
 			}()
 
