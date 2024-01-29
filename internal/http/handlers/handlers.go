@@ -244,7 +244,9 @@ func (h *Handlers) UserUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(urls) == 0 {
-		w.WriteHeader(http.StatusNoContent)
+		// w.WriteHeader(http.StatusNoContent)
+		w.WriteHeader(http.StatusUnauthorized)
+
 		return
 	}
 
