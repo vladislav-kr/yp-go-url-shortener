@@ -37,6 +37,7 @@ func NewRouter(
 	router.Post("/api/shorten", h.SaveJSONHandler)
 	router.Post("/api/shorten/batch", h.BatchHandler)
 	router.Get("/api/user/urls", h.UserUrlsHandler)
+	router.Delete("/api/user/urls", h.DeleteURLS)
 
 	return router
 }

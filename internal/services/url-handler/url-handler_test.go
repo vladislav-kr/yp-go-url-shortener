@@ -58,6 +58,7 @@ func TestReadURL(t *testing.T) {
 			h := NewURLHandler(
 				storage,
 				mocks.NewDBPinger(t),
+				nil,
 			)
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -123,7 +124,7 @@ func TestSaveURL(t *testing.T) {
 					Return(tc.expectedAlias, tc.expectedErr)
 			}
 
-			h := NewURLHandler(storage, mocks.NewDBPinger(t))
+			h := NewURLHandler(storage, mocks.NewDBPinger(t), nil)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			alias, err := h.SaveURL(ctx, tc.longURL, "")
@@ -173,7 +174,7 @@ func TestPing(t *testing.T) {
 
 			pingDB := mocks.NewDBPinger(t)
 
-			h := NewURLHandler(storage, pingDB)
+			h := NewURLHandler(storage, pingDB, nil)
 			pingDB.
 				On("PingContext", mock.AnythingOfType("*context.timerCtx")).
 				Return(err)
@@ -246,7 +247,7 @@ func TestSaveURLS(t *testing.T) {
 			storage.On("SaveURLS", mock.AnythingOfType("*context.timerCtx"), tc.urls, "").
 				Return(tc.expectedURLS, tc.err)
 
-			h := NewURLHandler(storage, mocks.NewDBPinger(t))
+			h := NewURLHandler(storage, mocks.NewDBPinger(t), nil)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			respURLS, err := h.SaveURLS(ctx, tc.urls, "")

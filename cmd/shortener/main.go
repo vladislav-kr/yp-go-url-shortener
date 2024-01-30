@@ -37,6 +37,7 @@ func main() {
 	defer cancel()
 
 	urlShortener, err := app.NewURLShortener(
+		ctx,
 		log,
 		app.Option{
 			Host:            cfg.HTTP.Host,

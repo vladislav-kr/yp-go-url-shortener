@@ -7,7 +7,9 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/lib/cryptoutils"
 	"go.uber.org/zap"
@@ -15,17 +17,20 @@ import (
 
 var (
 	ErrAlreadyExists = errors.New("the value already exists")
+	ErrURLRemoved = errors.New("url has already been deleted")
 )
 
 type DBKeeper struct {
-	db  *sql.DB
-	log *zap.Logger
+	db     *sql.DB
+	dbPool *pgxpool.Pool
+	log    *zap.Logger
 }
 
-func NewDBKeeper(log *zap.Logger, db *sql.DB) *DBKeeper {
+func NewDBKeeper(log *zap.Logger, db *sql.DB, dbPool *pgxpool.Pool) *DBKeeper {
 	return &DBKeeper{
-		db:  db,
-		log: log,
+		db:     db,
+		dbPool: dbPool,
+		log:    log,
 	}
 }
 
@@ -124,16 +129,21 @@ func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest, use
 }
 
 func (k *DBKeeper) GetURL(ctx context.Context, id string) (string, error) {
-	sqlStatement := `SELECT original_url FROM shortened_url WHERE short_url=$1;`
+	sqlStatement := `SELECT original_url, is_deleted FROM shortened_url WHERE short_url=$1;`
 
 	row := k.db.QueryRowContext(ctx, sqlStatement, id)
 
 	var fullURL string
+	var deleted bool
 
-	err := row.Scan(&fullURL)
+	err := row.Scan(&fullURL, &deleted)
 	if err != nil {
 		return "", fmt.Errorf("records for the key %s do not exist", id)
 	}
+	if deleted {
+		return "", ErrURLRemoved
+	}
+
 	return fullURL, nil
 }
 
@@ -185,4 +195,43 @@ func NullUserID(userID string) sql.NullString {
 		Valid:  valid,
 	}
 
+}
+
+func (k *DBKeeper) DeleteURLS(ctx context.Context, shortURLS []models.DeleteURL) {
+
+	query := `
+		UPDATE shortened_url
+		SET
+			is_deleted = true
+		WHERE
+			short_url = @shortURL
+			AND user_id = @userID`
+
+	batch := &pgx.Batch{}
+	for _, url := range shortURLS {
+		args := pgx.NamedArgs{
+			"shortURL": url.ShortURL,
+			"userID":   url.UserID,
+		}
+		batch.Queue(query, args)
+	}
+
+	results := k.dbPool.SendBatch(ctx, batch)
+	defer results.Close()
+
+	for _, url := range shortURLS {
+		_, err := results.Exec()
+		if err != nil {
+			k.log.Error("failed to delete url",
+				zap.String("url", url.ShortURL),
+				zap.Error(err),
+			)
+		}
+	}
+
+	if err := results.Close(); err != nil {
+		k.log.Error("failed to close response batch",
+			zap.Error(err),
+		)
+	}
 }

@@ -15,6 +15,11 @@ type URLHandler struct {
 	mock.Mock
 }
 
+// DeleteURLS provides a mock function with given fields: ctx, shortURLS, userID
+func (_m *URLHandler) DeleteURLS(ctx context.Context, shortURLS []string, userID string) {
+	_m.Called(ctx, shortURLS, userID)
+}
+
 // GetURLS provides a mock function with given fields: ctx, userID
 func (_m *URLHandler) GetURLS(ctx context.Context, userID string) ([]models.MassURL, error) {
 	ret := _m.Called(ctx, userID)

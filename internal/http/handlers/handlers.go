@@ -24,6 +24,7 @@ type URLHandler interface {
 	SaveURLS(ctx context.Context, urls []models.BatchRequest, userID string) ([]models.BatchResponse, error)
 	Ping(ctx context.Context) error
 	GetURLS(ctx context.Context, userID string) ([]models.MassURL, error)
+	DeleteURLS(ctx context.Context, shortURLS []string, userID string)
 }
 
 type Handlers struct {
@@ -96,6 +97,12 @@ func (h *Handlers) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 
 	url, err := h.urlHandler.ReadURL(ctx, alias)
 	if err != nil {
+
+		if errors.Is(err, urlhandler.ErrURLRemoved) {
+			w.WriteHeader(http.StatusGone)
+			return
+		}
+
 		h.log.Error(
 			"failed to read url",
 			zap.String("alias", alias),
@@ -253,4 +260,30 @@ func (h *Handlers) UserUrlsHandler(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, urls)
+}
+
+func (h *Handlers) DeleteURLS(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	userID := auth.UserIDFromContext(r.Context())
+
+	if len(userID) == 0 {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	deleteURLS := []string{}
+
+	if err := json.NewDecoder(r.Body).Decode(&deleteURLS); err != nil {
+		h.log.Error(
+			"failed to read JSON request body",
+			zap.Error(err),
+		)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	h.urlHandler.DeleteURLS(context.TODO(), deleteURLS, userID)
+
+	w.WriteHeader(http.StatusAccepted)
 }
