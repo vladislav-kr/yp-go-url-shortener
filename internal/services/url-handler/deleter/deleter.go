@@ -26,6 +26,12 @@ func NewDeleter(ctx context.Context,
 		callback: callback,
 	}
 
+	go func() {
+		<-d.context.Done()
+		d.jobsClosed = true
+		close(d.jobs)
+	}()
+
 	workers := d.fanOut()
 
 	d.result = d.fanIn(workers...)
@@ -45,8 +51,6 @@ func (d *Deleter) AddMessages(shortURLS []string, userID string) {
 		select {
 		case d.jobs <- models.MassDeleteURL{ShortURLS: shortURLS, UserID: userID}:
 		case <-d.context.Done():
-			d.jobsClosed = true
-			close(d.jobs)
 			return
 		}
 	}()
