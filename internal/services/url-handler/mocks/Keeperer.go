@@ -14,6 +14,11 @@ type Keeperer struct {
 	mock.Mock
 }
 
+// DeleteURLS provides a mock function with given fields: ctx, shortURLS
+func (_m *Keeperer) DeleteURLS(ctx context.Context, shortURLS []models.DeleteURL) {
+	_m.Called(ctx, shortURLS)
+}
+
 // GetURL provides a mock function with given fields: ctx, id
 func (_m *Keeperer) GetURL(ctx context.Context, id string) (string, error) {
 	ret := _m.Called(ctx, id)

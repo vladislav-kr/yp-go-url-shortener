@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/auth"
@@ -18,12 +19,15 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/lib/fileutils"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/server"
 	urlHandler "github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler/deleter"
 	dbkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/db-keeper"
 	mapkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/map-keeper"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
 	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -47,7 +51,7 @@ type Option struct {
 	StorageDBDNS    string
 }
 
-func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
+func NewURLShortener(ctx context.Context, log *zap.Logger, opt Option) (*URLShortener, error) {
 	var (
 		db         *sql.DB
 		memStorage *mapkeeper.Keeper
@@ -61,6 +65,12 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		dbPool, err := connectionPool(ctx, opt.StorageDBDNS)
+		if err != nil {
+			return nil, err
+		}
+
 		storage = dbkeeper.NewDBKeeper(log.With(
 			zap.String(
 				"component",
@@ -68,6 +78,7 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 			),
 		),
 			db,
+			dbPool,
 		)
 	case len(opt.StorageFilePath) > 0:
 		storageFilePath, err := validateStorageFilePath(opt.StorageFilePath)
@@ -87,7 +98,14 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 				"handlers",
 			),
 		),
-		urlHandler.NewURLHandler(storage, db),
+		urlHandler.NewURLHandler(
+			storage,
+			db,
+			deleter.NewDeleter(ctx, 10, func(urls []models.DeleteURL) {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+				defer cancel()
+				storage.DeleteURLS(ctx, urls)
+			})),
 		opt.RedirectHost,
 	)
 
@@ -183,6 +201,16 @@ func (us *URLShortener) Run(ctx context.Context) error {
 				return err
 			}
 
+			_, err = tx.ExecContext(ctx,
+				`ALTER TABLE shortened_url ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT FALSE;`)
+			if err != nil {
+				us.log.Info(
+					"failed to create new column is_deleted",
+					zap.Error(err),
+				)
+				return err
+			}
+
 			if err := tx.Commit(); err != nil {
 				us.log.Info(
 					"failed to apply changes to the database",
@@ -247,6 +275,14 @@ func connectionDB(dns string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dns)
 	if err != nil {
 		return nil, fmt.Errorf("failed connection to database: %w", err)
+	}
+	return db, nil
+}
+
+func connectionPool(ctx context.Context, dns string) (*pgxpool.Pool, error) {
+	db, err := pgxpool.New(ctx, dns)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create connection pool: %w", err)
 	}
 	return db, nil
 }

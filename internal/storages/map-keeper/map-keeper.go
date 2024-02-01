@@ -23,6 +23,9 @@ func New(filePath string) *Keeper {
 	}
 }
 
+func (k *Keeper) DeleteURLS(_ context.Context, _ []models.DeleteURL) {
+
+}
 func (k *Keeper) PostURL(ctx context.Context, url string, _ string) (string, error) {
 	select {
 	case <-ctx.Done():
