@@ -13,6 +13,7 @@ import (
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/auth"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/router"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/lib/fileutils"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/server"
@@ -97,6 +98,7 @@ func NewURLShortener(log *zap.Logger, opt Option) (*URLShortener, error) {
 				"middleware",
 			),
 		),
+		auth.New("secret-key"),
 	)
 
 	srv := &http.Server{
@@ -170,6 +172,17 @@ func (us *URLShortener) Run(ctx context.Context) error {
 				)
 				return err
 			}
+
+			_, err = tx.ExecContext(ctx,
+				`ALTER TABLE shortened_url ADD COLUMN IF NOT EXISTS user_id UUID;`)
+			if err != nil {
+				us.log.Info(
+					"failed to create new column user_id",
+					zap.Error(err),
+				)
+				return err
+			}
+
 			if err := tx.Commit(); err != nil {
 				us.log.Info(
 					"failed to apply changes to the database",

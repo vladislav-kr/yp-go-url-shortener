@@ -3,6 +3,7 @@ module github.com/vladislav-kr/yp-go-url-shortener
 go 1.21.4
 
 require (
+	github.com/google/uuid v1.6.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/sync v0.5.0
 )
@@ -24,6 +25,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-chi/render v1.0.3
+	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx/v5 v5.5.1
 	github.com/pmezard/go-difflib v1.0.0 // indirect

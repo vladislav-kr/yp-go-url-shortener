@@ -41,7 +41,7 @@ func TestKeeper(t *testing.T) {
 			)
 
 			if !tt.isError {
-				id, err = stor.PostURL(context.Background(), tt.url)
+				id, err = stor.PostURL(context.Background(), tt.url, "")
 				require.NoError(t, err)
 				assert.NotEmpty(t, id)
 			}

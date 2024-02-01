@@ -6,17 +6,21 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
+	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/auth"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/compress"
 	"go.uber.org/zap"
 )
 
 type Middleware struct {
-	log *zap.Logger
+	log  *zap.Logger
+	auth *auth.Auth
 }
 
-func New(log *zap.Logger) *Middleware {
+func New(log *zap.Logger, auth *auth.Auth) *Middleware {
 	return &Middleware{
-		log: log,
+		log:  log,
+		auth: auth,
 	}
 }
 
@@ -35,6 +39,7 @@ func (m *Middleware) Logger(next http.Handler) http.Handler {
 					zap.Int("status", ww.Status()),
 					zap.Int("bytes", ww.BytesWritten()),
 					zap.Duration("duration", time.Since(t)),
+					zap.String("user-id", auth.UserIDFromContext(r.Context())),
 				)
 			}()
 
@@ -86,4 +91,47 @@ func (m *Middleware) NewCompressHandler(contentTypes []string) func(next http.Ha
 			next.ServeHTTP(ow, r)
 		})
 	}
+}
+
+func (m *Middleware) Auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+
+			cookie, err := auth.CookieFromRequest(r)
+			if err != nil {
+				userID := uuid.New().String()
+				cookie, err := m.auth.CreateCookie(time.Hour*3, userID)
+				if err != nil {
+					m.log.Error("failed to create new cookie", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				http.SetCookie(w, cookie)
+				ctx := auth.ContextWithUserID(r.Context(), userID)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
+			claims, err := m.auth.Validate(cookie.Value)
+			if err != nil {
+				userID := uuid.New().String()
+				m.log.Error("token is invalid", zap.Error(err))
+				cookie, err := m.auth.CreateCookie(time.Hour*3, userID)
+				if err != nil {
+					m.log.Error("failed to create new cookie", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				http.SetCookie(w, cookie)
+				ctx := auth.ContextWithUserID(r.Context(), userID)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
+			ctx := auth.ContextWithUserID(r.Context(), claims.UserID)
+			rr := r.WithContext(ctx)
+
+			next.ServeHTTP(w, rr)
+		},
+	)
 }

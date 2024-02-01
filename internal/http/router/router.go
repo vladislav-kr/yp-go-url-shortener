@@ -20,22 +20,23 @@ func NewRouter(
 	router.Use(
 		chiMiddleware.Recoverer,
 		chiMiddleware.URLFormat,
-		m.Logger,
 		m.NewCompressHandler([]string{
 			"application/json",
 			"text/html",
 		}),
+		m.Auth,
+		m.Logger,
 	)
 
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	})
 	router.Get("/ping", h.PingHandler)
-
-	router.Post("/", h.SaveHandler)
 	router.Get("/{id}", h.RedirectHandler)
+	router.Post("/", h.SaveHandler)
 	router.Post("/api/shorten", h.SaveJSONHandler)
 	router.Post("/api/shorten/batch", h.BatchHandler)
+	router.Get("/api/user/urls", h.UserUrlsHandler)
 
 	return router
 }

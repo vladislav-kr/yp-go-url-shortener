@@ -28,7 +28,7 @@ func TestLogger(t *testing.T) {
 	)
 
 	r := chi.NewRouter()
-	r.Use(New(log).Logger)
+	r.Use(New(log, nil).Logger)
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -132,7 +132,7 @@ func TestCompress(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			r := chi.NewRouter()
-			r.Use(New(log).NewCompressHandler(tc.ContentTypesSupported))
+			r.Use(New(log, nil).NewCompressHandler(tc.ContentTypesSupported))
 			r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 				defer r.Body.Close()
 				b, err := io.ReadAll(r.Body)
