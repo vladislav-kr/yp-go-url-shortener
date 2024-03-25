@@ -9,7 +9,6 @@ import (
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware"
-
 )
 
 // Конфигурирует главный роутер

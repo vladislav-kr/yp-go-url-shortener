@@ -9,7 +9,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	jwttoken "github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/auth/jwt-token"
-
 )
 
 const key = "auth-token"

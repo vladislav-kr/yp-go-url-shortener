@@ -9,7 +9,6 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/app"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/config"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/logger"
-
 )
 
 func main() {

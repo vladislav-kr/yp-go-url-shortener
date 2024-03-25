@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
-
 )
 
 func TestLogger(t *testing.T) {

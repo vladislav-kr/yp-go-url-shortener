@@ -14,12 +14,11 @@ import (
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/lib/cryptoutils"
-
 )
 
 var (
 	ErrAlreadyExists = errors.New("the value already exists")
-	ErrURLRemoved = errors.New("url has already been deleted")
+	ErrURLRemoved    = errors.New("url has already been deleted")
 )
 
 type DBKeeper struct {

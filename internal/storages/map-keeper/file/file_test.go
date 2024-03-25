@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
-
 )
 
 func TestReadWriteFile(t *testing.T) {

@@ -16,7 +16,6 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/auth"
 	urlhandler "github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler"
-
 )
 
 //go:generate mockery --name URLHandler

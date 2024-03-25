@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 )
 
 func BenchmarkGenerateRandomString10(b *testing.B) {
