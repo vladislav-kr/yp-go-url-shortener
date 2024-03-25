@@ -1,3 +1,4 @@
+// mapkeeper in-memory хранилище
 package mapkeeper
 
 import (
@@ -10,12 +11,14 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/storages/map-keeper/file"
 )
 
+// Keeper хранит данные для in-memory хранилища.
 type Keeper struct {
 	mutex    sync.RWMutex
 	storage  map[string]string
 	filePath string
 }
 
+// New конструктор Keeper.
 func New(filePath string) *Keeper {
 	return &Keeper{
 		storage:  map[string]string{},
@@ -23,9 +26,12 @@ func New(filePath string) *Keeper {
 	}
 }
 
+// DeleteURLS удаление URL
 func (k *Keeper) DeleteURLS(_ context.Context, _ []models.DeleteURL) {
 
 }
+
+// PostURL сохранение сокращенного URL.
 func (k *Keeper) PostURL(ctx context.Context, url string, _ string) (string, error) {
 	select {
 	case <-ctx.Done():
@@ -43,6 +49,7 @@ func (k *Keeper) PostURL(ctx context.Context, url string, _ string) (string, err
 	}
 }
 
+// GetURL чтение оригинального URL.
 func (k *Keeper) GetURL(ctx context.Context, id string) (string, error) {
 	select {
 	case <-ctx.Done():
@@ -58,6 +65,8 @@ func (k *Keeper) GetURL(ctx context.Context, id string) (string, error) {
 		return val, nil
 	}
 }
+
+// SaveURLS массовое сохранение URL.
 func (k *Keeper) SaveURLS(ctx context.Context, urls []models.BatchRequest, _ string) ([]models.BatchResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -83,6 +92,7 @@ func (k *Keeper) SaveURLS(ctx context.Context, urls []models.BatchRequest, _ str
 	}
 }
 
+// LoadFromFile загружает данные из файла.
 func (k *Keeper) LoadFromFile() error {
 	if len(k.filePath) == 0 {
 		return nil
@@ -106,6 +116,7 @@ func (k *Keeper) LoadFromFile() error {
 	return c.Close()
 }
 
+// SaveToFile сохраняет данные в файл .
 func (k *Keeper) SaveToFile() error {
 	if len(k.filePath) == 0 {
 		return nil

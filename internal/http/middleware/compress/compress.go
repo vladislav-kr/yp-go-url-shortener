@@ -1,3 +1,4 @@
+// compress сжатие и распаковка данных
 package compress
 
 import (
@@ -24,11 +25,14 @@ type compressWriter struct {
 	supportCompress func(contType string) bool
 }
 
+// Header возвращает http.Header.
 func (cw *compressWriter) Header() http.Header {
 
 	return cw.w.Header()
 }
 
+// Write R записывает данные ответа со сжатием,
+// если это позволяет Content-Type.
 func (cw *compressWriter) Write(p []byte) (int, error) {
 
 	if cw.supportCompress(cw.w.Header().Get("Content-Type")) {
@@ -41,6 +45,7 @@ func (cw *compressWriter) Write(p []byte) (int, error) {
 	return cw.w.Write(p)
 }
 
+// WriteHeader устанавливает статус ответа.
 func (cw *compressWriter) WriteHeader(statusCode int) {
 
 	if statusCode < http.StatusMultipleChoices &&
@@ -50,6 +55,7 @@ func (cw *compressWriter) WriteHeader(statusCode int) {
 	cw.w.WriteHeader(statusCode)
 }
 
+// Close закрывает gzip.Write и возвращает в sync.Pool
 func (cw *compressWriter) Close() error {
 
 	if cw.cleanup != nil {
@@ -65,11 +71,13 @@ type compressReader struct {
 	cleanup func() (err error)
 }
 
+// Read читает сжатые данные.
 func (cr compressReader) Read(p []byte) (n int, err error) {
 
 	return cr.zr.Read(p)
 }
 
+// Close закрывает
 func (cr *compressReader) Close() error {
 
 	if err := cr.cleanup(); err != nil {
@@ -84,6 +92,7 @@ type compressPool struct {
 	supContTypes []string
 }
 
+// NewCompressPool новый pool с write gzip.Writer и gzip.Reader
 func NewCompressPool(supContTypes []string) (*compressPool, error) {
 
 	buf := bytes.NewBuffer(nil)
@@ -116,6 +125,7 @@ func NewCompressPool(supContTypes []string) (*compressPool, error) {
 	}, nil
 }
 
+// NewCompressWriter инстанция compressWriter.
 func (cp *compressPool) NewCompressWriter(w http.ResponseWriter) *compressWriter {
 
 	return &compressWriter{
@@ -129,6 +139,7 @@ func (cp *compressPool) NewCompressWriter(w http.ResponseWriter) *compressWriter
 	}
 }
 
+// NewCompressReader инстанция compressReader.
 func (cp *compressPool) NewCompressReader(r io.ReadCloser) *compressReader {
 
 	zr, cleanup := cp.reader(r)

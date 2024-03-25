@@ -60,8 +60,10 @@ func ExampleHandlers_SaveHandler() {
 	ww := httptest.NewRecorder()
 
 	router.ServeHTTP(ww, req)
-	ww.Result().Body.Close()
-	fmt.Println(ww.Result().StatusCode)
+	result := ww.Result()
+	defer result.Body.Close()
+	fmt.Println(result.StatusCode)
+
 	// Output:
 	// 201
 

@@ -1,3 +1,4 @@
+// jwttoken создание и обработка JWT токенов
 package jwttoken
 
 import (

@@ -1,3 +1,4 @@
+// server отвечает за запуск и остановку http сервера
 package server
 
 import (

@@ -1,3 +1,4 @@
+// app сборка и запуск сервера
 package app
 
 import (
@@ -30,6 +31,7 @@ import (
 	mapkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/map-keeper"
 )
 
+// URLShortener хранить все параметры сервера.
 type URLShortener struct {
 	log             *zap.Logger
 	server          *server.HTTPServer
@@ -38,6 +40,7 @@ type URLShortener struct {
 	memStorage      *mapkeeper.Keeper
 }
 
+// Option конфигурация сервера.
 type Option struct {
 	Host            string
 	RedirectHost    string
@@ -49,6 +52,7 @@ type Option struct {
 	StorageDBDNS    string
 }
 
+// NewURLShortener новая инстанция сервера.
 func NewURLShortener(ctx context.Context, log *zap.Logger, opt Option) (*URLShortener, error) {
 	var (
 		db         *sql.DB
@@ -139,6 +143,7 @@ func NewURLShortener(ctx context.Context, log *zap.Logger, opt Option) (*URLShor
 	}, nil
 }
 
+// Run запускает сервер.
 func (us *URLShortener) Run(ctx context.Context) error {
 	// Контекст прослушивающий сигналы прерывания OS
 	sigCtx, sigCancel := signal.NotifyContext(ctx,

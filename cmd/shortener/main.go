@@ -1,3 +1,4 @@
+// main сборка и запуск приложения
 package main
 
 import (

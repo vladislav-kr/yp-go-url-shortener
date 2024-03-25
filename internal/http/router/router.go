@@ -1,3 +1,4 @@
+// router роутинг
 package router
 
 import (
@@ -11,7 +12,7 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware"
 )
 
-// Конфигурирует главный роутер
+// NewRouter создает новый роутер.
 func NewRouter(
 	h *handlers.Handlers,
 	m *middleware.Middleware,
