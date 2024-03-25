@@ -12,6 +12,7 @@ import (
 	dbkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/db-keeper"
 )
 
+// Ошибки сервисного слоя
 var (
 	ErrAlreadyExists = errors.New("the value already exists")
 	ErrURLRemoved    = errors.New("url has already been deleted")

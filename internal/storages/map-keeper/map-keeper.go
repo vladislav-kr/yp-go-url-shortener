@@ -144,6 +144,7 @@ func (k *Keeper) SaveToFile() error {
 	return p.Close()
 }
 
+// GetURLS список сокращенных URL пользователя.
 func (k *Keeper) GetURLS(_ context.Context, _ string) ([]models.MassURL, error) {
 	return nil, fmt.Errorf("method not implemented")
 }

@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Константы уровня логирования
 const (
 	DebugLevel  = "debug"  // уровень логирования debug
 	InfoLevel   = "info"   // уровень логирования info
