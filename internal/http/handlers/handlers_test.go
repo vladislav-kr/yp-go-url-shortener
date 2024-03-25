@@ -427,7 +427,7 @@ func ExampleHandlers_SaveHandler() {
 	ww := httptest.NewRecorder()
 
 	router.ServeHTTP(ww, req)
-	defer ww.Result().Body.Close()
+	ww.Result().Body.Close()
 	fmt.Println(ww.Result().StatusCode)
 	// Output:
 	// 201
