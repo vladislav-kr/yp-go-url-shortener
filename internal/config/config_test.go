@@ -31,8 +31,8 @@ func TestConfig(t *testing.T) {
 			expectedURL:  "http://localhost:9091",
 		},
 		{
-			name:         "env variables don't exist",
-			beforeFunc:   func(t *testing.T) {},
+			name:       "env variables don't exist",
+			beforeFunc: func(t *testing.T) {},
 		},
 	}
 	for _, tt := range tests {

@@ -4,10 +4,12 @@ import (
 	"context"
 	"log"
 
+	"go.uber.org/zap"
+
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/app"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/config"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/logger"
-	"go.uber.org/zap"
+
 )
 
 func main() {
