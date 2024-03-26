@@ -1,3 +1,4 @@
+// config конфигурация сервера
 package config
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/caarlos0/env/v10"
 )
 
+// Config конфигурационные данные сервера.
 type Config struct {
 	App struct {
 		LogLevel string `env:"APP_LOG_LEVEL" envDefault:"info"`
@@ -31,7 +33,7 @@ type Config struct {
 	}
 }
 
-// Загружает конфиг приложения
+// LoadConfig загружает конфиг приложения.
 func LoadConfig() (*Config, error) {
 	var cfg Config
 

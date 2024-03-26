@@ -1,3 +1,4 @@
+// deleter отвечает за асинхронное удаление URL
 package deleter
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 )
 
+// Deleter хранит данные для реализации удаления URL
 type Deleter struct {
 	context    context.Context
 	jobs       chan models.MassDeleteURL
@@ -16,6 +18,7 @@ type Deleter struct {
 	callback   func(urls []models.DeleteURL)
 }
 
+// NewDeleter конструктор для Deleter.
 func NewDeleter(ctx context.Context,
 	bufLen int,
 	callback func(urls []models.DeleteURL),
@@ -41,6 +44,7 @@ func NewDeleter(ctx context.Context,
 	return d
 }
 
+// AddMessages добавляет URL для удаления.
 func (d *Deleter) AddMessages(shortURLS []string, userID string) {
 
 	if d.jobsClosed {

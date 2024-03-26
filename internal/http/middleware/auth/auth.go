@@ -13,16 +13,19 @@ import (
 
 const key = "auth-token"
 
+// Auth авторизация пользователей.
 type Auth struct {
 	secretKey string
 }
 
+// New конструктор Auth.
 func New(secretKey string) *Auth {
 	return &Auth{
 		secretKey: secretKey,
 	}
 }
 
+// CreateCookie создает cookie с подписанным токеном JWT.
 func (a *Auth) CreateCookie(
 	expiresAt time.Duration,
 	userID string,
@@ -40,6 +43,7 @@ func (a *Auth) CreateCookie(
 	}, nil
 }
 
+// Validate проверяет токен в cookie.
 func (a *Auth) Validate(tokenString string) (*jwttoken.Claims, error) {
 	claims := &jwttoken.Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
@@ -60,6 +64,7 @@ func (a *Auth) Validate(tokenString string) (*jwttoken.Claims, error) {
 	return claims, nil
 }
 
+// CookieFromRequest cookie из *http.Request.
 func CookieFromRequest(r *http.Request) (*http.Cookie, error) {
 	return r.Cookie(key)
 }
@@ -72,11 +77,13 @@ var (
 	userIDCtxKey = &contextKey{"userID"}
 )
 
+// ContextWithUserID контекст с UserID.
 func ContextWithUserID(parent context.Context, userID string) context.Context {
 	ctx := context.WithValue(parent, userIDCtxKey, userID)
 	return ctx
 }
 
+// UserIDFromContext UserID из контекста.
 func UserIDFromContext(ctx context.Context) string {
 	if userID, ok := ctx.Value(userIDCtxKey).(string); ok {
 		return userID

@@ -1,3 +1,4 @@
+// jwttoken создание и обработка JWT токенов
 package jwttoken
 
 import (
@@ -6,11 +7,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// Claims расширенная структура из github.com/golang-jwt/jwt/v5 на UserID.
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID string
 }
 
+// NewJWTToken создает новый JWT-токен и подписывает его.
 func NewJWTToken(
 	expiresAt time.Duration,
 	secretKey string,

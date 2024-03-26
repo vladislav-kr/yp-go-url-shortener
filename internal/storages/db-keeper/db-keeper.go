@@ -1,3 +1,4 @@
+// dbkeeper отвечает за хранилище в postgres
 package dbkeeper
 
 import (
@@ -16,17 +17,20 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/lib/cryptoutils"
 )
 
+// Ошибки уровня хранилища
 var (
 	ErrAlreadyExists = errors.New("the value already exists")
 	ErrURLRemoved    = errors.New("url has already been deleted")
 )
 
+// DBKeeper хранит подключения к БД.
 type DBKeeper struct {
 	db     *sql.DB
 	dbPool *pgxpool.Pool
 	log    *zap.Logger
 }
 
+// NewDBKeeper конструктор DBKeeper.
 func NewDBKeeper(log *zap.Logger, db *sql.DB, dbPool *pgxpool.Pool) *DBKeeper {
 	return &DBKeeper{
 		db:     db,
@@ -35,6 +39,7 @@ func NewDBKeeper(log *zap.Logger, db *sql.DB, dbPool *pgxpool.Pool) *DBKeeper {
 	}
 }
 
+// PostURL сохранение сокращенного URL.
 func (k *DBKeeper) PostURL(ctx context.Context, url string, userID string) (string, error) {
 
 	id, err := cryptoutils.GenerateRandomString(10)
@@ -72,6 +77,8 @@ func (k *DBKeeper) PostURL(ctx context.Context, url string, userID string) (stri
 	}
 	return id, nil
 }
+
+// SaveURLS массовое сохранение URL.
 func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest, userID string) ([]models.BatchResponse, error) {
 	tx, err := k.db.BeginTx(ctx, nil)
 
@@ -129,6 +136,7 @@ func (k *DBKeeper) SaveURLS(ctx context.Context, urls []models.BatchRequest, use
 	return batchResp, nil
 }
 
+// GetURL чтение оригинального URL.
 func (k *DBKeeper) GetURL(ctx context.Context, id string) (string, error) {
 	sqlStatement := `SELECT original_url, is_deleted FROM shortened_url WHERE short_url=$1;`
 
@@ -148,6 +156,7 @@ func (k *DBKeeper) GetURL(ctx context.Context, id string) (string, error) {
 	return fullURL, nil
 }
 
+// GetURLS список сокращенных URL пользователя.
 func (k *DBKeeper) GetURLS(ctx context.Context, userID string) ([]models.MassURL, error) {
 	sqlStatement := `
 		SELECT
@@ -185,6 +194,7 @@ func (k *DBKeeper) GetURLS(ctx context.Context, userID string) ([]models.MassURL
 	return urls, nil
 }
 
+// NullUserID создает sql.NullString
 func NullUserID(userID string) sql.NullString {
 	var valid bool
 	if len(userID) > 0 {
@@ -198,6 +208,7 @@ func NullUserID(userID string) sql.NullString {
 
 }
 
+// DeleteURLS удаление URL
 func (k *DBKeeper) DeleteURLS(ctx context.Context, shortURLS []models.DeleteURL) {
 
 	query := `

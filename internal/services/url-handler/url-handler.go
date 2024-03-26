@@ -1,3 +1,4 @@
+// urlhandler отвечает за реализацию бизнес логики
 package urlhandler
 
 import (
@@ -11,11 +12,14 @@ import (
 	dbkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/db-keeper"
 )
 
+// Ошибки сервисного слоя
 var (
 	ErrAlreadyExists = errors.New("the value already exists")
 	ErrURLRemoved    = errors.New("url has already been deleted")
 )
 
+// Keeperer интерфейс хранилища данных.
+//
 //go:generate mockery --name Keeperer
 type Keeperer interface {
 	PostURL(ctx context.Context, url string, userID string) (string, error)
@@ -25,17 +29,21 @@ type Keeperer interface {
 	DeleteURLS(ctx context.Context, shortURLS []models.DeleteURL)
 }
 
+// DBPinger интерфейс проверки доступности хранилища.
+//
 //go:generate mockery --name DBPinger
 type DBPinger interface {
 	PingContext(ctx context.Context) error
 }
 
+// URLHandler хранит объекты, необходимые для реализации бизнес логики
 type URLHandler struct {
 	storage Keeperer
 	pingDB  DBPinger
 	deleter *deleter.Deleter
 }
 
+// NewURLHandler конструктор URLHandler.
 func NewURLHandler(storage Keeperer, pingDB DBPinger, deleter *deleter.Deleter) *URLHandler {
 	return &URLHandler{
 		storage: storage,
@@ -44,6 +52,7 @@ func NewURLHandler(storage Keeperer, pingDB DBPinger, deleter *deleter.Deleter) 
 	}
 }
 
+// ReadURL чтение оригинального URL.
 func (uh *URLHandler) ReadURL(ctx context.Context, alias string) (string, error) {
 
 	if len(alias) == 0 {
@@ -62,6 +71,7 @@ func (uh *URLHandler) ReadURL(ctx context.Context, alias string) (string, error)
 
 }
 
+// SaveURL сохранение сокращенного URL.
 func (uh *URLHandler) SaveURL(ctx context.Context, url string, userID string) (string, error) {
 
 	alias := ""
@@ -82,10 +92,12 @@ func (uh *URLHandler) SaveURL(ctx context.Context, url string, userID string) (s
 	return alias, nil
 }
 
+// Ping проверка доступности хранилища.
 func (uh *URLHandler) Ping(ctx context.Context) error {
 	return uh.pingDB.PingContext(ctx)
 }
 
+// SaveURLS массовое сохранение URL.
 func (uh *URLHandler) SaveURLS(
 	ctx context.Context,
 	urls []models.BatchRequest,
@@ -97,10 +109,12 @@ func (uh *URLHandler) SaveURLS(
 	return uh.storage.SaveURLS(ctx, urls, userID)
 }
 
+// GetURLS список сокращенных URL пользователя.
 func (uh *URLHandler) GetURLS(ctx context.Context, userID string) ([]models.MassURL, error) {
 	return uh.storage.GetURLS(ctx, userID)
 }
 
+// DeleteURLS удаление URL.
 func (uh *URLHandler) DeleteURLS(ctx context.Context, shortURLS []string, userID string) {
 	select {
 	case <-ctx.Done():

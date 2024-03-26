@@ -1,3 +1,4 @@
+// logger отвечает за логирование в приложении
 package logger
 
 import (
@@ -7,16 +8,18 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Константы уровня логирования
 const (
-	DebugLevel  = "debug"
-	InfoLevel   = "info"
-	WarnLevel   = "warn"
-	ErrorLevel  = "error"
-	DPanicLevel = "dPanic"
-	PanicLevel  = "panic"
-	FatalLevel  = "fatal"
+	DebugLevel  = "debug"  // уровень логирования debug
+	InfoLevel   = "info"   // уровень логирования info
+	WarnLevel   = "warn"   // уровень логирования warn
+	ErrorLevel  = "error"  // уровень логирования error
+	DPanicLevel = "dPanic" // уровень логирования dPanic
+	PanicLevel  = "panic"  // уровень логирования panic
+	FatalLevel  = "fatal"  // уровень логирования fatal
 )
 
+// MustLogger создает новый логгер.
 func MustLogger(level string) *zap.Logger {
 	lvl := zap.InfoLevel
 

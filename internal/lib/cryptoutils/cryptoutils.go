@@ -1,3 +1,4 @@
+// cryptoutils функции связанные с криптографией
 package cryptoutils
 
 import (
@@ -6,6 +7,7 @@ import (
 	"math/big"
 )
 
+// GenerateRandomString случайная строка заданной длинны.
 func GenerateRandomString(size int) (string, error) {
 	const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 

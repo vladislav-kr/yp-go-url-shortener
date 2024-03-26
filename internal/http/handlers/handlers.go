@@ -1,3 +1,4 @@
+// Пакет handlers предназначен для реализации логики обработки http-хендлеров.
 package handlers
 
 import (
@@ -18,6 +19,8 @@ import (
 	urlhandler "github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler"
 )
 
+// URLHandler интерфейс описывающий бизнес логику сервиса.
+//
 //go:generate mockery --name URLHandler
 type URLHandler interface {
 	ReadURL(ctx context.Context, alias string) (string, error)
@@ -28,12 +31,14 @@ type URLHandler interface {
 	DeleteURLS(ctx context.Context, shortURLS []string, userID string)
 }
 
+// Handlers обрабатывает логику http-хендлеров.
 type Handlers struct {
 	log          *zap.Logger
 	urlHandler   URLHandler
 	redirectHost string
 }
 
+// NewHandlers создаёт новый объект Handlers.
 func NewHandlers(
 	log *zap.Logger,
 	urlHandler URLHandler,
@@ -46,6 +51,7 @@ func NewHandlers(
 	}
 }
 
+// SaveHandler создает короткий URL.
 func (h *Handlers) SaveHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	data, err := io.ReadAll(r.Body)
@@ -90,6 +96,7 @@ func (h *Handlers) SaveHandler(w http.ResponseWriter, r *http.Request) {
 	render.PlainText(w, r, fmt.Sprintf("%s/%s", h.redirectHost, id))
 }
 
+// RedirectHandler перенаправляет на длинный URL, по сокращённому.
 func (h *Handlers) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 	alias := chi.URLParam(r, "id")
 
@@ -117,6 +124,7 @@ func (h *Handlers) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
+// SaveHandler создает короткий URL.
 func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -166,6 +174,7 @@ func (h *Handlers) SaveJSONHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// PingHandler проверят подключение к хранилищу.
 func (h *Handlers) PingHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*2)
@@ -179,6 +188,8 @@ func (h *Handlers) PingHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+// BatchHandler создает сокращенные URL для массива данных.
 func (h *Handlers) BatchHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -224,6 +235,7 @@ func (h *Handlers) BatchHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// UserUrlsHandler возвращает список сокращенных URL пользователем.
 func (h *Handlers) UserUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -263,6 +275,7 @@ func (h *Handlers) UserUrlsHandler(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, urls)
 }
 
+// DeleteURLS удаляет список сокращенных URL.
 func (h *Handlers) DeleteURLS(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 

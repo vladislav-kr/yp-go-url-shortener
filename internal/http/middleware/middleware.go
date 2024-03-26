@@ -13,11 +13,13 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/compress"
 )
 
+// Middleware хранит общие объекты.
 type Middleware struct {
 	log  *zap.Logger
 	auth *auth.Auth
 }
 
+// New новая инстанция Middleware.
 func New(log *zap.Logger, auth *auth.Auth) *Middleware {
 	return &Middleware{
 		log:  log,
@@ -25,6 +27,7 @@ func New(log *zap.Logger, auth *auth.Auth) *Middleware {
 	}
 }
 
+// Logger логирование запросов.
 func (m *Middleware) Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -49,6 +52,7 @@ func (m *Middleware) Logger(next http.Handler) http.Handler {
 	)
 }
 
+// NewCompressHandler распаковка и сжатие данных.
 func (m *Middleware) NewCompressHandler(contentTypes []string) func(next http.Handler) http.Handler {
 	compressPool, err := compress.NewCompressPool(contentTypes)
 	if err != nil {
@@ -94,6 +98,7 @@ func (m *Middleware) NewCompressHandler(contentTypes []string) func(next http.Ha
 	}
 }
 
+// Auth авторизация и валидация.
 func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
