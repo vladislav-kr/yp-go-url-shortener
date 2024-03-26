@@ -66,7 +66,7 @@ func (d *Deleter) deleter() {
 			case url, ok := <-d.result:
 				if !ok {
 					d.callCallback(deleteURLS)
-					deleteURLS = []models.DeleteURL{}
+					deleteURLS = deleteURLS[:0]
 					return
 				}
 
@@ -74,16 +74,16 @@ func (d *Deleter) deleter() {
 
 				if len(deleteURLS) > 9 {
 					d.callCallback(deleteURLS)
-					deleteURLS = []models.DeleteURL{}
+					deleteURLS = deleteURLS[:0]
 				}
 
 			case <-d.context.Done():
 				d.callCallback(deleteURLS)
-				deleteURLS = []models.DeleteURL{}
+				deleteURLS = deleteURLS[:0]
 				return
 			case <-ticker.C:
 				d.callCallback(deleteURLS)
-				deleteURLS = []models.DeleteURL{}
+				deleteURLS = deleteURLS[:0]
 			}
 		}
 	}()
