@@ -7,9 +7,10 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
+
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/auth"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/compress"
-	"go.uber.org/zap"
 )
 
 type Middleware struct {

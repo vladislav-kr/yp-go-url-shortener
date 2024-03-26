@@ -11,10 +11,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"go.uber.org/zap"
+
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/middleware/auth"
 	urlhandler "github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler"
-	"go.uber.org/zap"
 )
 
 //go:generate mockery --name URLHandler

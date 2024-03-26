@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,6 +11,11 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/domain/models"
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/http/handlers"
@@ -22,14 +28,6 @@ import (
 	"github.com/vladislav-kr/yp-go-url-shortener/internal/services/url-handler/deleter"
 	dbkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/db-keeper"
 	mapkeeper "github.com/vladislav-kr/yp-go-url-shortener/internal/storages/map-keeper"
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
-
-	"database/sql"
-
-	"github.com/jackc/pgx/v5/pgxpool"
-
-	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type URLShortener struct {
